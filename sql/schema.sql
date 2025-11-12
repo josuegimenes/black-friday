@@ -1,0 +1,11 @@
+﻿CREATE TABLE IF NOT EXISTS bf_leads (
+    id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    full_name VARCHAR(160) NOT NULL,
+    email VARCHAR(180) NOT NULL,
+    whatsapp VARCHAR(40) NOT NULL,
+    products JSON NOT NULL,
+    total_items INT UNSIGNED NOT NULL,
+    total_value DECIMAL(10,2) NOT NULL,
+    total_savings DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

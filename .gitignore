@@ -1,0 +1,39 @@
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+
+# IDEs
+.vscode/
+.idea/
+*.code-workspace
+
+# Runtime caches
+/storage/
+/cache/
+*.cache
+
+# PHP / Composer
+/vendor/
+composer.phar
+composer.lock
+
+# Node / tooling
+/node_modules/
+package-lock.json
+pnpm-lock.yaml
+*.tsbuildinfo
+
+# Environment & secrets
+.env
+.env.*
+*.key
+config/config.php
+config/*.local.php
+
+# Build artifacts / uploads
+/public/uploads/
+/public/storage/
+/dist/
+/build/
