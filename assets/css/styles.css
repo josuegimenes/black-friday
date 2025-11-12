@@ -96,7 +96,7 @@ header .headline {
 .countdown .value {
     font-size: 1.1rem;
     font-weight: 600;
-    color: var(--neon-yellow);
+    color: var(--panel-dark);
 }
 
 .countdown .label {
@@ -127,7 +127,7 @@ header .headline {
     padding: clamp(64px, 10vw, 120px) clamp(24px, 7vw, 96px) 72px;
     display: flex;
     flex-direction: column;
-    gap: 32px;
+    gap: 20px;
     align-items: center;
     text-align: center;
 }
@@ -136,7 +136,8 @@ header .headline {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    margin-bottom: -10px;
 }
 
 .logo-glow {
@@ -146,7 +147,7 @@ header .headline {
 }
 
 .logo-type {
-    width: min(520px, 80vw);
+    width: min(900px, 90vw);
     aspect-ratio: 16 / 9;
     background: linear-gradient(120deg, #000000, #FFE702, #D70000);
     background-size: 200% 200%;
@@ -179,6 +180,7 @@ header .headline {
     width: min(780px, 100%);
     background: rgba(5, 5, 5, 0.8);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    margin-top: -8px;
 }
 
 .hero-pill .pill-headline {
@@ -596,6 +598,10 @@ header .headline {
     border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 28px;
     padding: 28px 32px;
+    position: sticky;
+    top: clamp(12px, 8vw, 48px);
+    z-index: 40;
+    backdrop-filter: blur(10px);
 }
 
 .summary-banner strong {
@@ -768,6 +774,20 @@ header .headline {
     font-weight: 700;
 }
 
+.save-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 18px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 79, 222, 0.4);
+    background: rgba(255, 79, 222, 0.15);
+    color: var(--neon-pink);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
 .selector {
     display: flex;
     flex-direction: column;
@@ -833,15 +853,44 @@ header .headline {
 
 .cart-panel {
     margin-top: 40px;
-    border-radius: 24px;
-    border: 1px solid rgba(255,255,255,0.08);
-    padding: 20px;
-    background: rgba(255,255,255,0.01);
+    border-radius: 28px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 28px;
+    background: radial-gradient(circle at top, rgba(255, 79, 222, 0.08), rgba(0, 0, 0, 0.65));
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
 }
 
-.cart-panel h3 {
-    margin: 0 0 16px;
+.cart-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    align-items: flex-start;
+}
+
+.cart-head h3 {
+    margin: 6px 0 0;
     font-family: var(--space);
+}
+
+.cart-counter {
+    text-align: right;
+    background: rgba(5,5,5,0.4);
+    border-radius: 18px;
+    padding: 8px 16px;
+    border: 1px solid rgba(255,255,255,0.12);
+    min-width: 92px;
+}
+
+.cart-counter span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+}
+
+.cart-counter strong {
+    font-size: 1.4rem;
 }
 
 .cart-items {
@@ -853,41 +902,71 @@ header .headline {
 .cart-item {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
+    gap: 16px;
+    padding: 14px 16px;
+    border-radius: 18px;
+    background: rgba(5,5,5,0.55);
+    border: 1px solid rgba(255,255,255,0.08);
     font-size: 0.95rem;
 }
 
 .cart-item span {
     color: var(--muted);
+    display: block;
+    margin-top: 4px;
 }
 
 .cart-item button {
-    background: transparent;
+    background: rgba(255,255,255,0.08);
     border: none;
     color: var(--danger);
-    font-size: 1.2rem;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
     cursor: pointer;
 }
 
 .cart-items .empty {
     color: var(--muted);
+    text-align: center;
+    padding: 16px 0;
 }
 
-.cart-summary {
-    margin-top: 18px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+.cart-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
 }
 
-.cart-summary strong {
-    font-size: 1.1rem;
+.cart-metrics div {
+    padding: 14px 16px;
+    border-radius: 16px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.cart-metrics span {
+    display: block;
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.cart-metrics strong {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.2rem;
+}
+
+.cart-note {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted);
 }
 
 .primary-action {
-    margin-top: 18px;
+    margin-top: 6px;
     width: 100%;
     padding: 14px;
     border-radius: 16px;
@@ -1030,6 +1109,40 @@ header .headline {
     text-transform: uppercase;
 }
 
+.progress-shell {
+    width: 100%;
+    margin: 18px 0 26px;
+    padding: 16px 22px;
+    border-radius: 32px;
+    border: 1px solid rgba(255,255,255,0.25);
+    background: rgba(255,255,255,0.02);
+    text-align: center;
+}
+
+.progress-label {
+    display: block;
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.progress-track {
+    width: 100%;
+    height: 12px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.08);
+    margin-top: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.15);
+}
+
+.progress-fill {
+    height: 100%;
+    width: var(--progress, 0%);
+    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
+}
+
 .success-card a {
     display: inline-flex;
     align-items: center;
@@ -1047,6 +1160,87 @@ footer {
     text-align: center;
     color: var(--muted);
     font-size: 0.9rem;
+}
+.merge-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5,5,10,0.85);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 950;
+}
+
+.merge-overlay.active {
+    display: flex;
+}
+
+.merge-card {
+    width: min(520px, 95vw);
+    background: #0b0b14;
+    border-radius: 28px;
+    padding: 32px;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    position: relative;
+    text-align: center;
+}
+
+.merge-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+.merge-kicker {
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin: 0 0 8px;
+}
+
+.merge-card h3 {
+    margin: 0 0 12px;
+}
+
+.merge-card p {
+    margin: 0 0 18px;
+    color: var(--muted);
+}
+
+.merge-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.merge-option {
+    padding: 14px 20px;
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.15);
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+}
+
+.merge-option.primary {
+    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
+    color: #050505;
+}
+
+.merge-option.secondary {
+    background: rgba(255,255,255,0.05);
+    color: var(--text);
 }
 .category-icon .labeling {
     display: flex;

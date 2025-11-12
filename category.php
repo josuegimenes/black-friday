@@ -11,6 +11,9 @@ if (!array_key_exists($slug, $catalog)) {
 
 $category = $catalog[$slug];
 $products = $category['products'];
+$pricingOverrides = is_file(__DIR__ . '/config/product_pricing.php')
+    ? require __DIR__ . '/config/product_pricing.php'
+    : [];
 
 $categoryIllustrations = [
     'vestidos-longos' => 'vestidos-longos-white.png',
@@ -159,7 +162,7 @@ function collect_gallery(string $directory): array
     return array_map('relative_asset_path', $files);
 }
 
-function load_asset_products(string $slug, array $fallbackProducts): array
+function load_asset_products(string $slug, array $fallbackProducts, array $pricingOverrides): array
 {
     $baseDir = __DIR__ . '/assets/img/' . $slug;
     if (!is_dir($baseDir)) {
@@ -172,6 +175,9 @@ function load_asset_products(string $slug, array $fallbackProducts): array
     $fallbackCount = count($fallbackProducts);
 
     foreach ($directories as $index => $dir) {
+        $fallbackIndex = $fallbackCount > 0 ? min($index, $fallbackCount - 1) : null;
+        $fallback = $fallbackIndex !== null ? $fallbackProducts[$fallbackIndex] : null;
+
         $descriptorFile = current(glob($dir . '/*.txt'));
         $meta = $descriptorFile ? parse_descriptor($descriptorFile) : [];
         $gallery = collect_gallery($dir);
@@ -182,11 +188,10 @@ function load_asset_products(string $slug, array $fallbackProducts): array
             continue;
         }
 
-        $fallbackIndex = $fallbackCount > 0 ? min($index, $fallbackCount - 1) : null;
-        $fallback = $fallbackIndex !== null ? $fallbackProducts[$fallbackIndex] : null;
-
         $name = $meta['name'] ?? ($fallback['name'] ?? basename($dir));
-        $productId = $slug . '-' . slugify($name ?: basename($dir));
+        $nameSlug = slugify($name ?: basename($dir));
+        $productId = $slug . '-' . $nameSlug . '-' . ($index + 1);
+        $override = $pricingOverrides[$slug][$nameSlug] ?? [];
 
         $sizeOptions = !empty($meta['size_options']) ? $meta['size_options'] : ($fallback['sizes'] ?? []);
         $colorOptions = !empty($meta['colors']) ? $meta['colors'] : ($fallback['colors'] ?? []);
@@ -210,15 +215,15 @@ function load_asset_products(string $slug, array $fallbackProducts): array
             'size_notes' => $meta['sizes_map'] ?? [],
             'quantities' => $meta['quantities'] ?? [],
             'description' => $meta['description'] ?: ($fallback['cover_copy'] ?? ''),
-            'original_price' => $fallback['original_price'] ?? 0,
-            'sale_price' => $fallback['sale_price'] ?? 0,
+            'original_price' => $override['original_price'] ?? ($fallback['original_price'] ?? 0),
+            'sale_price' => $override['sale_price'] ?? ($fallback['sale_price'] ?? 0),
         ];
     }
 
     return $products;
 }
 
-$assetProducts = load_asset_products($slug, $products);
+$assetProducts = load_asset_products($slug, $products, $pricingOverrides);
 if (!empty($assetProducts)) {
     $products = $assetProducts;
 }
@@ -234,8 +239,9 @@ $otherCategories = array_filter(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($category['name']) ?> | Catalogo Vesteme</title>
+    <title><?= htmlspecialchars($category['name']) ?> | Catálogo Vésteme</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="icon" type="image/jpeg" href="favicon.ico">
 </head>
 <body class="category-body">
 <header class="category-top">
@@ -346,7 +352,7 @@ $otherCategories = array_filter(
                             <span class="anchor">De <?= number_format($product['original_price'], 2, ',', '.') ?></span>
                             <span class="deal">por <?= number_format($product['sale_price'], 2, ',', '.') ?></span>
                         </div>
-                        <small>Economize <?= number_format($product['original_price'] - $product['sale_price'], 2, ',', '.') ?> por peca</small>
+                        <span class="save-chip">Economize <?= number_format($product['original_price'] - $product['sale_price'], 2, ',', '.') ?> por peca</span>
 
                         <div class="selector">
                             <label>Tamanhos disponiveis</label>
@@ -378,14 +384,29 @@ $otherCategories = array_filter(
         </div>
 
         <div class="cart-panel">
-            <h3>Previa do carrinho</h3>
+            <div class="cart-head">
+                <div>
+                    <p class="section-kicker">Carrinho vip</p>
+                    <h3>Previa do carrinho</h3>
+                </div>
+                <div class="cart-counter">
+                    <span>Itens</span>
+                    <strong id="summaryItemsSecondary">0</strong>
+                </div>
+            </div>
             <div class="cart-items"></div>
-            <div class="cart-summary">
-                <strong>Resumo rapido</strong>
-                <span id="cartInvest">R$ 0,00</span>
-                <span id="cartSavings">Economia: R$ 0,00</span>
+            <div class="cart-metrics">
+                <div>
+                    <span>Investimento</span>
+                    <strong id="cartInvest">R$ 0,00</strong>
+                </div>
+                <div>
+                    <span>Economia estimada</span>
+                    <strong id="cartSavingsValue">R$ 0,00</strong>
+                </div>
             </div>
             <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
+            <p class="cart-note">Liberamos os pagamentos seguindo a ordem de cadastro e estoque disponivel.</p>
         </div>
     </section>
 
@@ -432,8 +453,9 @@ $otherCategories = array_filter(
                     <input type="tel" name="whatsapp" required placeholder="(00) 00000-0000">
                 </label>
             </div>
-            <p>Confirmando voce autoriza contato da Vesteme Modas sobre Black Friday, ofertas e logistica.</p>
+            <p>Confirmando você autoriza contato da Vésteme Modas sobre Black Friday, ofertas e logística.</p>
             <input type="hidden" name="cart_payload" id="cartPayload">
+            <input type="hidden" name="merge_previous" id="mergePrevious" value="no">
             <div class="checkout-actions">
                 <button type="button" class="ghost" id="closeCheckout">Editar carrinho</button>
                 <input type="submit" value="Confirmar interesse" class="solid">
@@ -442,8 +464,21 @@ $otherCategories = array_filter(
     </div>
 </div>
 
+<div class="merge-overlay" id="mergeOverlay" aria-hidden="true">
+    <div class="merge-card">
+        <button class="merge-close" type="button" id="closeMergeModal" aria-label="Fechar aviso">&times;</button>
+        <p class="merge-kicker">Pedido encontrado</p>
+        <h3>Você já tem um pedido ativo para <span id="mergeEmail"></span></h3>
+        <p id="mergeInfo"></p>
+        <div class="merge-actions">
+            <button type="button" class="merge-option primary" id="mergeAppend">Somar itens ao pedido existente</button>
+            <button type="button" class="merge-option secondary" id="mergeReplace">Substituir pelo novo pedido</button>
+        </div>
+    </div>
+</div>
+
 <footer>
-    Vesteme Modas &mdash; Experiencia exclusiva Black Friday com acesso controlado.
+    Vésteme Modas &mdash; Experiência exclusiva Black Friday com acesso controlado.
 </footer>
 <script>
     window.catalogProducts = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
