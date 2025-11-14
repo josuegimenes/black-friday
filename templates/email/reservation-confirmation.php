@@ -33,6 +33,7 @@ function render_reservation_email(array $data): string
                     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
                         <thead>
                             <tr style="background:#f9f9fd;color:#6c6a7a;font-size:12px;text-transform:uppercase;letter-spacing:1px;">
+                                <th align="left" style="padding:14px 18px;width:72px;">Imagem</th>
                                 <th align="left" style="padding:14px 18px;">Produto</th>
                                 <th align="center" style="padding:14px 12px;">Qtd</th>
                                 <th align="center" style="padding:14px 12px;">Grade</th>
@@ -41,7 +42,15 @@ function render_reservation_email(array $data): string
                         </thead>
                         <tbody>
                             <?php foreach ($items as $item): ?>
+                                <?php $thumb = !empty($item['thumb']) ? htmlspecialchars($item['thumb'], ENT_QUOTES, 'UTF-8') : ''; ?>
                                 <tr style="font-size:14px;color:#110f1b;border-top:1px solid #f0f1f6;">
+                                    <td style="padding:14px 18px;text-align:left;">
+                                        <?php if ($thumb): ?>
+                                            <img src="<?= $thumb ?>" alt="<?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?>" width="64" height="64" style="width:64px;height:64px;border-radius:12px;object-fit:cover;border:1px solid #ededf4;">
+                                        <?php else: ?>
+                                            <span style="display:inline-block;width:64px;height:64px;border-radius:12px;background:#f3f3f8;border:1px solid #ededf4;"></span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td style="padding:14px 18px;">
                                         <strong style="display:block;font-size:15px;"><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?></strong>
                                         <span style="color:#8c8a98;font-size:12px;">Cor: <?= htmlspecialchars($item['color'], ENT_QUOTES, 'UTF-8') ?></span>

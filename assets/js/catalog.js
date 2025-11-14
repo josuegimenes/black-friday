@@ -7,6 +7,20 @@ const catalogProducts = window.catalogProducts || [];
 const cartStore = new Map();
 const CART_STORAGE_KEY = 'vesteme_cart_v1';
 
+const getProductMeta = (productId) => {
+    if (!productId) return null;
+
+    if (window.catalogById && Object.prototype.hasOwnProperty.call(window.catalogById, productId)) {
+        return window.catalogById[productId];
+    }
+
+    if (Array.isArray(catalogProducts)) {
+        return catalogProducts.find((p) => p && p.id === productId) || null;
+    }
+
+    return null;
+};
+
 const cartItemsWrapper = document.querySelector('.cart-items');
 const summaryItems = document.getElementById('summaryItems');
 const summarySavings = document.getElementById('summarySavings');
@@ -54,6 +68,33 @@ const getCartSnapshot = () => ({
     totals: calcTotals(),
 });
 
+// LOGS
+const debugCartSnapshot = (context, snapshot = null) => {
+    try {
+        const snap = snapshot || getCartSnapshot();
+
+        console.group(`[BF_DEBUG] Cart snapshot - ${context}`);
+        console.log('Totais:', snap.totals);
+
+        snap.items.forEach((item, index) => {
+            console.log(`#${index}`, {
+                key: item.key,
+                productId: item.productId,
+                name: item.name,
+                size: item.size,
+                color: item.color,
+                quantity: item.quantity,
+                thumb: item.thumb,
+            });
+        });
+
+        console.groupEnd();
+    } catch (err) {
+        console.warn('[BF_DEBUG] Erro ao inspecionar carrinho:', err);
+    }
+};
+// FIM LOGS
+
 const renderCart = () => {
     if (!cartItemsWrapper) return;
 
@@ -65,12 +106,16 @@ const renderCart = () => {
         cartStore.forEach((item) => {
             const div = document.createElement('div');
             div.className = 'cart-item';
+            const thumbMarkup = item.thumb
+                ? `<div class="cart-thumb"><img src="${item.thumb}" alt="${item.name}"></div>`
+                : '<div class="cart-thumb placeholder"></div>';
             div.innerHTML = `
-                <div>
+                ${thumbMarkup}
+                <div class="cart-meta">
                     <strong>${item.name}</strong>
                     <span>${item.size} | ${item.color} | ${item.quantity} un</span>
                 </div>
-                <div>
+                <div class="cart-price">
                     <b>${currency.format(item.quantity * item.salePrice)}</b>
                     <button data-remove="${item.key}" title="Remover">&times;</button>
                 </div>
@@ -107,9 +152,19 @@ const closeCheckout = () => checkoutOverlay?.classList.remove('active');
 const updateCheckoutModal = () => {
     if (!checkoutOverlay) return;
 
+    const snapshot = getCartSnapshot();
+
+    // 🔍 DEBUG: sempre que o modal/checkout for atualizado
+    debugCartSnapshot(
+        checkoutOverlay.classList.contains('active')
+            ? 'checkout ABERTO (updateCheckoutModal)'
+            : 'checkout FECHADO (updateCheckoutModal)',
+        snapshot,
+    );
+
     if (!checkoutOverlay.classList.contains('active')) {
         if (cartPayloadInput) {
-            cartPayloadInput.value = JSON.stringify(getCartSnapshot());
+            cartPayloadInput.value = JSON.stringify(snapshot);
         }
         return;
     }
@@ -119,15 +174,25 @@ const updateCheckoutModal = () => {
         return;
     }
 
-    const snapshot = getCartSnapshot();
     if (checkoutList) {
         checkoutList.innerHTML = snapshot.items
-            .map(
-                (item) =>
-                    `<li><span>${item.quantity}x ${item.name} (${item.size}/${item.color})</span><strong>${currency.format(
-                        item.quantity * item.salePrice,
-                    )}</strong></li>`,
-            )
+            .map((item) => {
+                const price = currency.format(item.quantity * item.salePrice);
+                const thumbMarkup = item.thumb
+                    ? `<div class="checkout-thumb"><img src="${item.thumb}" alt="${item.name}"></div>`
+                    : '<div class="checkout-thumb placeholder"></div>';
+
+                return `
+                    <li>
+                        ${thumbMarkup}
+                        <div class="checkout-info">
+                            <strong>${item.name}</strong>
+                            <span>${item.size} · ${item.color} · ${item.quantity} un</span>
+                        </div>
+                        <strong class="checkout-price">${price}</strong>
+                    </li>
+                `;
+            })
             .join('');
     }
 
@@ -169,16 +234,24 @@ const hydrateCart = (rawValue = null) => {
     }
 };
 
-const mountItem = (product, size, color, quantity) => ({
-    key: createKey(product.id, size, color),
-    productId: product.id,
-    name: product.name,
-    size,
-    color,
-    quantity,
-    originalPrice: product.original_price,
-    salePrice: product.sale_price,
-});
+const mountItem = (product, size, color, quantity, thumb = null) => {
+    const item = {
+        key: createKey(product.id, size, color),
+        productId: product.id,
+        name: product.name,
+        size,
+        color,
+        quantity,
+        originalPrice: Number(product.original_price ?? product.originalPrice ?? 0),
+        salePrice: Number(product.sale_price ?? product.salePrice ?? 0),
+        thumb: thumb ?? product.thumb ?? null,
+    };
+
+    // 🔍 DEBUG: ver item exatamente como vai para o carrinho
+    console.log('[BF_DEBUG] mountItem criado:', item);
+
+    return item;
+};
 
 const attachGalleryControls = () => {
     document.querySelectorAll('[data-product-card]').forEach((card) => {
@@ -203,7 +276,7 @@ const attachGalleryControls = () => {
 const attachCardEvents = () => {
     document.querySelectorAll('[data-product-card]').forEach((card) => {
         const productId = card.dataset.productId;
-        const product = catalogProducts.find((item) => item.id === productId);
+        const product = getProductMeta(productId);
         if (!product) return;
 
         const sizeSelect = card.querySelector('select[name="size"]');
@@ -234,7 +307,17 @@ const attachCardEvents = () => {
                 quantityInput.value = 1;
             }
 
-            const item = mountItem(product, size, color, Math.max(1, quantity));
+            let thumb = null;
+            if (product && product.thumb) {
+                thumb = product.thumb;
+            } else {
+                const mainImage = card.querySelector('[data-gallery-main] img');
+                if (mainImage?.src) {
+                    thumb = mainImage.src;
+                }
+            }
+
+            const item = mountItem(product, size, color, Math.max(1, quantity), thumb);
             const existing = cartStore.get(item.key);
             if (existing) {
                 item.quantity += existing.quantity;
@@ -429,6 +512,9 @@ checkoutForm?.addEventListener('submit', async (event) => {
         alert('Informe um WhatsApp valido.');
         return;
     }
+
+    // 🔍 DEBUG: snapshot final que será enviado para o backend
+    debugCartSnapshot('ANTES DO SUBMIT checkoutForm');
 
     updateCheckoutModal();
 });
