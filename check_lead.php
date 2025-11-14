@@ -11,7 +11,7 @@ if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
 
 try {
     $pdo = get_pdo();
-$stmt = $pdo->prepare('SELECT id, full_name, total_items, total_value, total_savings, created_at FROM bf_leads WHERE LOWER(email) = :email ORDER BY id DESC LIMIT 1');
+$stmt = $pdo->prepare('SELECT id, full_name, total_items, total_value, total_savings, status, created_at FROM bf_leads WHERE LOWER(email) = :email ORDER BY id DESC LIMIT 1');
     $stmt->execute([':email' => $email]);
     $lead = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -41,6 +41,7 @@ $stmt = $pdo->prepare('SELECT id, full_name, total_items, total_value, total_sav
             'total_savings' => (float) $lead['total_savings'],
             'created_at' => $lead['created_at'],
             'created_at_br' => $createdAt,
+            'status' => $lead['status'] ?? 'Em preparação interna',
         ],
     ]);
 } catch (Throwable $exception) {

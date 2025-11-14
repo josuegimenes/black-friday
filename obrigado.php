@@ -22,7 +22,7 @@ $progress = 89;
         </div>
         <h1>Reserva confirmada, <?= htmlspecialchars($name) ?>!</h1>
         <p>
-            Obrigado por travar sua posicao na maior Black da Vésteme. Estamos organizando os pedidos por ordem de cadastro e voce recebera todas as atualizacoes no WhatsApp e por e-mail.
+            Obrigado por travar sua posição na maior Black da Vésteme. Estamos organizando os pedidos por ordem de cadastro e você recebera todas as atualizações no WhatsApp ou por e-mail.
         </p>
         <p>Entre agora no grupo exclusivo:</p>
         <a href="https://chat.whatsapp.com/CrFlwHsXKoOKTkX9kqvdJM" target="_blank" rel="noopener">Acessar o grupo VIP no WhatsApp</a>

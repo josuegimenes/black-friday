@@ -140,7 +140,7 @@ function send_confirmation_email(string $to, string $name, array $cartData, arra
 
     $logoUrl = base_url() . '/assets/img/logo-vesteme-black.jpg';
     $body = build_email_body($name, $cartData, $logoUrl, WHATSAPP_GROUP_LINK);
-    $subject = 'Vésteme - sua reserva VIP foi confirmada';
+    $subject = 'Parabéns! Sua reserva VIP foi confirmada 🎉';
     $altBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body));
 
     try {
@@ -212,7 +212,7 @@ try {
             ':id' => $existingLead['id'],
         ]);
     } else {
-        $stmt = $pdo->prepare('INSERT INTO bf_leads (full_name, email, whatsapp, products, total_items, total_value, total_savings) VALUES (:name, :email, :whatsapp, :products, :total_items, :total_value, :total_savings)');
+        $stmt = $pdo->prepare('INSERT INTO bf_leads (full_name, email, whatsapp, products, total_items, total_value, total_savings, status) VALUES (:name, :email, :whatsapp, :products, :total_items, :total_value, :total_savings, :status)');
         $stmt->execute([
             ':name' => $fullName,
             ':email' => $email,
@@ -221,6 +221,7 @@ try {
             ':total_items' => $totalItems,
             ':total_value' => $totalValue,
             ':total_savings' => $totalSavings,
+            ':status' => 'Em preparação interna',
         ]);
     }
 } catch (Throwable $exception) {
