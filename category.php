@@ -270,34 +270,7 @@ $otherCategories = array_filter(
 </header>
 
 <main class="category-shell">
-    <section class="category-hero">
-        <div class="hero-copy">
-            <p class="badge">Linha selecionada &bull; preco de atacado liberado</p>
-            <h1><?= htmlspecialchars($category['name']) ?></h1>
-            <p><?= htmlspecialchars($category['cover_copy']) ?></p>
-            <div class="hero-actions">
-                <a class="cta-primary" href="#produtos">Quero montar meu pedido</a>
-                <span class="hero-note">Ordem de liberacao segue o cadastro confirmado.</span>
-            </div>
-        </div>
-        <div class="category-video">
-            <iframe src="<?= htmlspecialchars($category['hero_video']) ?>" title="Video explicativo" frameborder="0" allowfullscreen></iframe>
-        </div>
-    </section>
-
     <section class="catalog-section" id="produtos">
-        <div class="summary-banner">
-            <div>
-                <strong>Simule agora</strong>
-                <p>Acompanhe o potencial de economia conforme adiciona as pecas. Seu lugar na fila e garantido quando enviar os dados.</p>
-            </div>
-            <div class="numbers">
-                <span>Pecas<b id="summaryItems">0</b></span>
-                <span>Investimento<b id="summaryValue">R$ 0,00</b></span>
-                <span>Economia<b id="summarySavings">R$ 0,00</b></span>
-            </div>
-        </div>
-
         <div class="product-grid">
             <?php foreach ($products as $product): ?>
                 <?php

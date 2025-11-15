@@ -20,7 +20,7 @@ $progress = 89;
                 <div class="progress-fill" style="--progress: <?= $progress ?>%;"></div>
             </div>
         </div>
-        <h1>Reserva confirmada, <?= htmlspecialchars($name) ?>!</h1>
+        <h1>Reserva confirmada, <br><?= htmlspecialchars($name) ?>!</h1>
         <p>
             Obrigado por travar sua posição na maior Black da Vésteme. Estamos organizando os pedidos por ordem de cadastro e você recebera todas as atualizações no WhatsApp ou por e-mail.
         </p>

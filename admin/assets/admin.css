@@ -162,7 +162,7 @@ header.dashboard-top {
 }
 
 .layout {
-    width: min(96vw, 1500px);
+    width: min(98vw, 1450px);
     margin: 0 auto;
     padding: 0 clamp(16px, 4vw, 48px) 64px;
 }
@@ -272,7 +272,7 @@ tbody tr:hover {
 }
 
 .col-client {
-    min-width: 200px;
+    min-width: 190px;
     white-space: nowrap;
 }
 
@@ -282,11 +282,11 @@ tbody tr:hover {
 }
 
 .col-email {
-    min-width: 220px;
+    min-width: 190px;
 }
 
 .col-whatsapp {
-    min-width: 180px;
+    min-width: 150px;
 }
 
 .col-status {
@@ -296,8 +296,8 @@ tbody tr:hover {
 
 .col-actions {
     text-align: center;
-    width: 100px;
-    min-width: 100px;
+    width: 80px;
+    min-width: 80px;
     white-space: nowrap;
 }
 
@@ -420,6 +420,11 @@ tbody tr:hover {
     color: #ff9ae6;
 }
 
+.status-chip.status-new {
+    background: rgba(255, 158, 57, 0.15);
+    color: #ffb460;
+}
+
 .status-chip.status-await {
     background: rgba(255, 223, 74, 0.12);
     color: #ffe577;
@@ -455,6 +460,40 @@ tbody tr:hover {
 .alert-error {
     background: rgba(255,107,107,0.12);
     border: 1px solid rgba(255,107,107,0.4);
+}
+
+@media (max-width: 1400px) {
+    .layout {
+        width: min(98vw, 1250px);
+        padding: 0 clamp(12px, 3vw, 32px) 48px;
+    }
+
+    th,
+    td {
+        padding: 12px 12px;
+        font-size: 0.78rem;
+    }
+
+    th {
+        font-size: 0.7rem;
+    }
+
+    .col-client {
+        min-width: 170px;
+    }
+
+    .col-email {
+        min-width: 170px;
+    }
+
+    .col-whatsapp {
+        min-width: 135px;
+    }
+
+    .col-actions {
+        width: 64px;
+        min-width: 64px;
+    }
 }
 
 /* ---------- RESPONSIVO GERAL ---------- */
