@@ -88,8 +88,9 @@ $faqItems = [
                     <span class="label">Segundos</span>
                 </div>
             </div>
-            <p class="hero-note">A promoção vai até 28/11 ou até o estoque acabar. Selecione seus itens agora para ter prioridade na liberação.</p>
-            <a class="cta-primary" href="#categorias">Monte meu pedido agora</a>
+
+            <p class="hero-note">A promoção vai até 28/11 ou até o estoque acabar.<br> Selecione seus itens agora para ter prioridade na liberação.</p>
+            <a class="cta-primary" href="#categorias">MONTE MEU PEDIDO AGORA</a>
         </section>
 
         <section class="steps-section" id="como-funciona">
