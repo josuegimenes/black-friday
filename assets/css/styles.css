@@ -153,8 +153,8 @@ header .headline {
 .logo-type {
     width: min(900px, 90vw);
     aspect-ratio: 16 / 9;
-    background: linear-gradient(120deg, #000000, #FFE702, #D70000);
-    background-size: 200% 200%;
+    background: linear-gradient(120deg, #ffe702, #ff007f, #ffe702, #ff007f);
+    background-size: 300% 300%;
     -webkit-mask-image: url('../img/logo-campanha.svg');
     mask-image: url('../img/logo-campanha.svg');
     -webkit-mask-repeat: no-repeat;
@@ -175,6 +175,25 @@ header .headline {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
+}
+
+@keyframes neonFlow {
+    0% {
+        background-position: 0% 50%;
+        box-shadow: 0 18px 36px rgba(255, 0, 127, 0.45), 0 0 24px rgba(255, 231, 2, 0.35);
+    }
+    33% {
+        background-position: 50% 50%;
+        box-shadow: 0 18px 40px rgba(255, 0, 127, 0.45), 0 0 28px rgba(255, 231, 2, 0.35);
+    }
+    66% {
+        background-position: 100% 50%;
+        box-shadow: 0 18px 40px rgba(255, 231, 2, 0.45), 0 0 28px rgba(255, 0, 127, 0.3);
+    }
+    100% {
+        background-position: 0% 50%;
+        box-shadow: 0 18px 36px rgba(255, 0, 127, 0.45), 0 0 24px rgba(255, 231, 2, 0.35);
+    }
 }
 
 .hero-pill {
@@ -253,20 +272,22 @@ header .headline {
     justify-content: center;
     padding: 18px 64px;
     border-radius: 999px;
-    background: #ff007f;
+    background: linear-gradient(120deg, #ffe702, #ff007f, #ffe702, #ff007f);
+    background-size: 280% 280%;
     color: #fff;
     font-family: var(--figtree);
     font-size: 1.25rem;      /* 20px */
     letter-spacing: 2px;
     text-transform: uppercase;
     font-weight: 900;        /* Black */
-    box-shadow: 0 20px 40px rgba(255, 0, 127, 0.4);
+    box-shadow: 0 20px 44px rgba(255, 0, 127, 0.4);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+    animation: neonFlow 4s ease-in-out infinite;
 }
 
 .cta-primary:hover {
     transform: translateY(-2px);
-    box-shadow: 0 24px 50px rgba(255, 0, 127, 0.55);
+    box-shadow: 0 24px 60px rgba(255, 0, 127, 0.6);
 }
 
 .category-body {
