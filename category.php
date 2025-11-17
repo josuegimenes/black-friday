@@ -153,7 +153,7 @@ function parse_descriptor(string $filePath): array
 function collect_gallery(string $directory): array
 {
     $extensions = ['jpg', 'jpeg', 'png', 'webp', 'avif'];
-    $pattern = $directory . '/*.{'.implode(',', $extensions).'}';
+    $pattern = $directory . '/*.{' . implode(',', $extensions) . '}';
     $files = glob($pattern, GLOB_BRACE);
     if (!$files) {
         return [];
@@ -414,6 +414,7 @@ $otherCategories = array_filter(
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -421,41 +422,43 @@ $otherCategories = array_filter(
     <link rel="stylesheet" href="assets/css/styles.css">
     <link rel="icon" type="image/jpeg" href="favicon.ico">
 </head>
-<body class="category-body">
-<header class="category-top">
-    <a class="back-link" href="index.php" aria-label="Voltar para a campanha">
-        <span>&larr;</span> Voltar para o portal
-    </a>
-    <div class="category-chip"><?= htmlspecialchars($category['name']) ?></div>
-    <div class="countdown ticker">
-        <div class="brick">
-            <span class="value" data-countdown="days">--</span>
-            <span class="label">Dias</span>
-        </div>
-        <div class="brick">
-            <span class="value" data-countdown="hours">--</span>
-            <span class="label">Horas</span>
-        </div>
-        <div class="brick">
-            <span class="value" data-countdown="minutes">--</span>
-            <span class="label">Min</span>
-        </div>
-        <div class="brick">
-            <span class="value" data-countdown="seconds">--</span>
-            <span class="label">Seg</span>
-        </div>
-    </div>
-    <button class="cart-toggle" id="cartToggle" aria-label="Abrir carrinho">
-        🛒
-        <span class="cart-badge" id="cartBadge">0</span>
-    </button>
-</header>
 
-<main class="category-shell">
-    <section class="catalog-section" id="produtos">
-        <div class="product-grid product-grid-neo">
-            <?php foreach ($products as $product): ?>
-                <?php
+<body class="category-body">
+    <header class="category-top">
+        <a class="back-link" href="index.php" aria-label="Voltar para a campanha">
+            <span>&larr;</span> Voltar para o portal
+        </a>
+        <div class="category-chip"><?= htmlspecialchars($category['name']) ?></div>
+        <div class="countdown ticker">
+            <div class="brick">
+                <span class="value" data-countdown="days">--</span>
+                <span class="label">Dias</span>
+            </div>
+            <div class="brick">
+                <span class="value" data-countdown="hours">--</span>
+                <span class="label">Horas</span>
+            </div>
+            <div class="brick">
+                <span class="value" data-countdown="minutes">--</span>
+                <span class="label">Min</span>
+            </div>
+            <div class="brick">
+                <span class="value" data-countdown="seconds">--</span>
+                <span class="label">Seg</span>
+            </div>
+        </div>
+        <button id="cartToggle" class="cart-toggle" data-cart-toggle>
+            🛒
+            <span id="cartBadge" class="cart-badge">0</span>
+        </button>
+
+    </header>
+
+    <main class="category-shell">
+        <section class="catalog-section" id="produtos">
+            <div class="product-grid product-grid-neo">
+                <?php foreach ($products as $product): ?>
+                    <?php
                     $colors = $product['colors'] ?? [];
                     if (empty($colors)) {
                         $fallbackGallery = $product['gallery'] ?? ($product['thumb'] ? [$product['thumb']] : []);
@@ -495,266 +498,268 @@ $otherCategories = array_filter(
                     $salePrice = $product['sale_price'] ?? 0;
                     $originalPrice = $product['original_price'] ?? $salePrice;
                     $economy = max(0, ($originalPrice ?? 0) - ($salePrice ?? 0));
-                ?>
-                <article class="product-card neo-layout" data-product-card data-product-id="<?= htmlspecialchars($product['id']) ?>" data-active-color="<?= htmlspecialchars($initialColorSlug) ?>">
-                    <script type="application/json" class="color-media-data"><?= $colorsJson ?></script>
+                    ?>
+                    <article class="product-card neo-layout" data-product-card data-product-id="<?= htmlspecialchars($product['id']) ?>" data-active-color="<?= htmlspecialchars($initialColorSlug) ?>">
+                        <script type="application/json" class="color-media-data">
+                            <?= $colorsJson ?>
+                        </script>
 
-                    <div class="media-column">
-                        <div class="thumbs-rail" data-thumbs>
-                            <?php if ($initialPrimary): ?>
-                                <button type="button" class="media-thumb is-active" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($initialPrimary) ?>">
-                                    <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
-                                </button>
-                            <?php endif; ?>
-                            <?php foreach ($initialGallery as $image): ?>
-                                <button type="button" class="media-thumb" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($image) ?>">
-                                    <img src="<?= htmlspecialchars($image) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
-                                </button>
-                            <?php endforeach; ?>
-                            <?php foreach ($initialVideos as $video): ?>
-                                <button type="button" class="media-thumb media-thumb-video" data-gallery-thumb data-media-type="video" data-src="<?= htmlspecialchars($video) ?>">
-                                    <span class="video-icon">▶</span>
-                                </button>
-                            <?php endforeach; ?>
-                        </div>
-                        <div class="media-viewer" data-gallery-main data-media-type="image">
-                            <?php if ($initialPrimary): ?>
-                                <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
-                            <?php endif; ?>
-                        </div>
-                    </div>
-
-                    <div class="product-panel">
-                        <div class="panel-head">
-                            <span class="badge status-badge">Novo</span>
-                            <div class="panel-title">
-                                <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
-                                <h3><?= htmlspecialchars($product['name']) ?></h3>
-                            </div>
-                        </div>
-
-                        <div class="price-row">
-                            <div>
-                                <?php if ($originalPrice && $originalPrice > $salePrice): ?>
-                                    <p class="price-before">R$ <?= number_format($originalPrice, 2, ',', '.') ?></p>
+                        <div class="media-column">
+                            <div class="thumbs-rail" data-thumbs>
+                                <?php if ($initialPrimary): ?>
+                                    <button type="button" class="media-thumb is-active" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($initialPrimary) ?>">
+                                        <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
+                                    </button>
                                 <?php endif; ?>
-                                <p class="price-now">R$ <?= number_format($salePrice, 2, ',', '.') ?></p>
-                                <?php if (!empty($payments[0]['label'])): ?>
-                                    <p class="payment-hint"><?= htmlspecialchars($payments[0]['label']) ?></p>
+                                <?php foreach ($initialGallery as $image): ?>
+                                    <button type="button" class="media-thumb" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($image) ?>">
+                                        <img src="<?= htmlspecialchars($image) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
+                                    </button>
+                                <?php endforeach; ?>
+                                <?php foreach ($initialVideos as $video): ?>
+                                    <button type="button" class="media-thumb media-thumb-video" data-gallery-thumb data-media-type="video" data-src="<?= htmlspecialchars($video) ?>">
+                                        <span class="video-icon">▶</span>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
+                            <div class="media-viewer" data-gallery-main data-media-type="image">
+                                <?php if ($initialPrimary): ?>
+                                    <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
                                 <?php endif; ?>
                             </div>
-                            <span class="saving-pill">Economize <?= number_format($economy, 2, ',', '.') ?> por peca</span>
                         </div>
 
-                        <div class="selectors neo stacked">
-                            <div class="selector">
-                                <label>Cor</label>
-                                <div class="pill-group" data-color-pills>
-                                    <?php foreach ($colors as $color): ?>
-                                        <button type="button" class="pill <?= $color['slug'] === $initialColorSlug ? 'is-active' : '' ?>" data-color-option data-color="<?= htmlspecialchars($color['slug']) ?>">
-                                            <?= htmlspecialchars($color['label']) ?>
-                                        </button>
-                                    <?php endforeach; ?>
+                        <div class="product-panel">
+                            <div class="panel-head">
+                                <span class="badge status-badge">Novo</span>
+                                <div class="panel-title">
+                                    <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
+                                    <h3><?= htmlspecialchars($product['name']) ?></h3>
                                 </div>
-                                <select name="color" data-color hidden>
-                                    <option value="">Selecione</option>
-                                    <?php foreach ($colors as $color): ?>
-                                        <option value="<?= htmlspecialchars($color['slug']) ?>" <?= $color['slug'] === $initialColorSlug ? 'selected' : '' ?>><?= htmlspecialchars($color['label']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
                             </div>
 
-                            <div class="selector">
-                                <label>Tamanho</label>
-                                <div class="pill-group" data-size-pills>
-                                    <?php foreach ($sizeOptions as $opt): ?>
-                                        <button type="button" class="pill" data-size-option data-size="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></button>
-                                    <?php endforeach; ?>
+                            <div class="price-row">
+                                <div>
+                                    <?php if ($originalPrice && $originalPrice > $salePrice): ?>
+                                        <p class="price-before">R$ <?= number_format($originalPrice, 2, ',', '.') ?></p>
+                                    <?php endif; ?>
+                                    <p class="price-now">R$ <?= number_format($salePrice, 2, ',', '.') ?></p>
+                                    <?php if (!empty($payments[0]['label'])): ?>
+                                        <p class="payment-hint"><?= htmlspecialchars($payments[0]['label']) ?></p>
+                                    <?php endif; ?>
                                 </div>
-                                <select name="size" data-size hidden>
-                                    <option value="">Selecione</option>
-                                    <?php foreach ($sizeOptions as $opt): ?>
-                                        <option value="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></option>
-                                    <?php endforeach; ?>
-                                </select>
+                                <span class="saving-pill">Economize <?= number_format($economy, 2, ',', '.') ?> por peca</span>
                             </div>
 
-                            <div class="selector quantity-compact">
-                                <label>Quantidade</label>
-                                <input type="number" name="quantity" min="1" value="1">
+                            <div class="selectors neo stacked">
+                                <div class="selector">
+                                    <label>Cor</label>
+                                    <div class="pill-group" data-color-pills>
+                                        <?php foreach ($colors as $color): ?>
+                                            <button type="button" class="pill <?= $color['slug'] === $initialColorSlug ? 'is-active' : '' ?>" data-color-option data-color="<?= htmlspecialchars($color['slug']) ?>">
+                                                <?= htmlspecialchars($color['label']) ?>
+                                            </button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <select name="color" data-color hidden>
+                                        <option value="">Selecione</option>
+                                        <?php foreach ($colors as $color): ?>
+                                            <option value="<?= htmlspecialchars($color['slug']) ?>" <?= $color['slug'] === $initialColorSlug ? 'selected' : '' ?>><?= htmlspecialchars($color['label']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="selector">
+                                    <label>Tamanho</label>
+                                    <div class="pill-group" data-size-pills>
+                                        <?php foreach ($sizeOptions as $opt): ?>
+                                            <button type="button" class="pill" data-size-option data-size="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></button>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <select name="size" data-size hidden>
+                                        <option value="">Selecione</option>
+                                        <?php foreach ($sizeOptions as $opt): ?>
+                                            <option value="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+
+                                <div class="selector quantity-compact">
+                                    <label>Quantidade</label>
+                                    <input type="number" name="quantity" min="1" value="1">
+                                </div>
+                            </div>
+
+                            <div class="product-meta-block">
+                                <?php if (!empty($product['fabric'])): ?>
+                                    <p><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></p>
+                                <?php endif; ?>
+                                <?php if (!empty($product['info'])): ?>
+                                    <div class="meta-list">
+                                        <strong>Informações:</strong>
+                                        <ul>
+                                            <?php foreach ($product['info'] as $info): ?>
+                                                <?php foreach (array_filter(array_map('trim', explode('|', $info))) as $piece): ?>
+                                                    <li><?= htmlspecialchars($piece) ?></li>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($product['measures'])): ?>
+                                    <div class="meta-list">
+                                        <strong>Medidas:</strong>
+                                        <ul>
+                                            <?php foreach ($product['measures'] as $measure): ?>
+                                                <?php foreach (array_filter(array_map('trim', explode('|', $measure))) as $piece): ?>
+                                                    <li><?= htmlspecialchars($piece) ?></li>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                <?php endif; ?>
+                                <?php if (!empty($payments)): ?>
+                                    <div class="meta-list">
+                                        <strong>Formas de pagamento:</strong>
+                                        <ul>
+                                            <?php foreach ($payments as $pay): ?>
+                                                <?php $label = $pay['label'] ?? ''; ?>
+                                                <?php foreach (array_filter(array_map('trim', explode('|', $label))) as $piece): ?>
+                                                    <li><?= htmlspecialchars($piece) ?></li>
+                                                <?php endforeach; ?>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <div class="actions-row">
+                                <button type="button" class="add-btn primary" data-add-to-cart>Adicionar ao carrinho</button>
+                                <button type="button" class="add-btn ghost" data-open-cart>Fechar carrinho</button>
                             </div>
                         </div>
-
-                        <div class="product-meta-block">
-                            <?php if (!empty($product['fabric'])): ?>
-                                <p><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></p>
-                            <?php endif; ?>
-                            <?php if (!empty($product['info'])): ?>
-                                <div class="meta-list">
-                                    <strong>Informações:</strong>
-                                    <ul>
-                                        <?php foreach ($product['info'] as $info): ?>
-                                            <?php foreach (array_filter(array_map('trim', explode('|', $info))) as $piece): ?>
-                                                <li><?= htmlspecialchars($piece) ?></li>
-                                            <?php endforeach; ?>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (!empty($product['measures'])): ?>
-                                <div class="meta-list">
-                                    <strong>Medidas:</strong>
-                                    <ul>
-                                        <?php foreach ($product['measures'] as $measure): ?>
-                                            <?php foreach (array_filter(array_map('trim', explode('|', $measure))) as $piece): ?>
-                                                <li><?= htmlspecialchars($piece) ?></li>
-                                            <?php endforeach; ?>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                            <?php endif; ?>
-                            <?php if (!empty($payments)): ?>
-                                <div class="meta-list">
-                                    <strong>Formas de pagamento:</strong>
-                                    <ul>
-                                        <?php foreach ($payments as $pay): ?>
-                                            <?php $label = $pay['label'] ?? ''; ?>
-                                            <?php foreach (array_filter(array_map('trim', explode('|', $label))) as $piece): ?>
-                                                <li><?= htmlspecialchars($piece) ?></li>
-                                            <?php endforeach; ?>
-                                        <?php endforeach; ?>
-                                    </ul>
-                                </div>
-                            <?php endif; ?>
-                        </div>
-
-                        <div class="actions-row">
-                            <button type="button" class="add-btn primary" data-add-to-cart>Adicionar ao carrinho</button>
-                            <button type="button" class="add-btn ghost" data-open-cart>Fechar carrinho</button>
-                        </div>
-                    </div>
-                </article>
-            <?php endforeach; ?>
-        </div>
-    </section>
-
-    <?php if (!empty($otherCategories)): ?>
-        <section class="order-section category-navigation">
-            <header>
-                <p class="section-kicker">Continuar navegando</p>
-                <h2>Explore outras categorias</h2>
-                <p>Volte apenas se quiser: basta escolher outra seção abaixo e seguir montando o seu carrinho.</p>
-            </header>
-            <div class="category-showcase">
-                <?php foreach ($otherCategories as $otherSlug => $otherCategory): ?>
-                    <?php if (!isset($categoryIllustrations[$otherSlug])) continue; ?>
-                    <article class="category-card">
-                        <div class="icon-ring">
-                            <img src="assets/img/<?= htmlspecialchars($categoryIllustrations[$otherSlug]) ?>" alt="Ilustracao da categoria <?= htmlspecialchars($otherCategory['name']) ?>">
-                        </div>
-                        <strong><?= htmlspecialchars($otherCategory['name']) ?></strong>
-                        <a class="mini-cta" href="category.php?slug=<?= urlencode($otherSlug) ?>">Ver mais</a>
                     </article>
                 <?php endforeach; ?>
             </div>
         </section>
-    <?php endif; ?>
-</main>
 
-<div class="cart-sidebar" id="cartSidebar" aria-hidden="true">
-    <div class="cart-sidebar__overlay" id="cartSidebarOverlay"></div>
-    <aside class="cart-sidebar__drawer" id="cartDrawer">
-        <header class="cart-sidebar__head">
-            <div>
-                <p class="section-kicker">Carrinho VIP</p>
-                <h3>Resumo</h3>
-            </div>
-            <button class="cart-sidebar__close" id="closeCartSidebar" aria-label="Fechar resumo">×</button>
-        </header>
+        <?php if (!empty($otherCategories)): ?>
+            <section class="order-section category-navigation">
+                <header>
+                    <p class="section-kicker">Continuar navegando</p>
+                    <h2>Explore outras categorias</h2>
+                    <p>Volte apenas se quiser: basta escolher outra seção abaixo e seguir montando o seu carrinho.</p>
+                </header>
+                <div class="category-showcase">
+                    <?php foreach ($otherCategories as $otherSlug => $otherCategory): ?>
+                        <?php if (!isset($categoryIllustrations[$otherSlug])) continue; ?>
+                        <article class="category-card">
+                            <div class="icon-ring">
+                                <img src="assets/img/<?= htmlspecialchars($categoryIllustrations[$otherSlug]) ?>" alt="Ilustracao da categoria <?= htmlspecialchars($otherCategory['name']) ?>">
+                            </div>
+                            <strong><?= htmlspecialchars($otherCategory['name']) ?></strong>
+                            <a class="mini-cta" href="category.php?slug=<?= urlencode($otherSlug) ?>">Ver mais</a>
+                        </article>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+    </main>
 
-        <div class="cart-sidebar__metrics">
-            <div>
-                <span>Itens</span>
-                <strong id="summaryItemsSecondary">0</strong>
-                <span id="summaryItems" class="sr-only">0</span>
-            </div>
-            <div>
-                <span>Investimento</span>
-                <strong id="cartInvest">R$ 0,00</strong>
-                <span id="summaryValue" class="sr-only">R$ 0,00</span>
-            </div>
-            <div>
-                <span>Economia estimada</span>
-                <strong id="cartSavingsValue">R$ 0,00</strong>
-                <span id="summarySavings" class="sr-only">R$ 0,00</span>
-            </div>
-        </div>
+    <div class="cart-sidebar" id="cartSidebar" aria-hidden="true">
+        <div class="cart-sidebar__overlay" id="cartSidebarOverlay"></div>
+        <aside class="cart-sidebar__drawer" id="cartDrawer">
+            <header class="cart-sidebar__head">
+                <div>
+                    <p class="section-kicker">Carrinho VIP</p>
+                    <h3>Resumo</h3>
+                </div>
+                <button class="cart-sidebar__close" id="closeCartSidebar" aria-label="Fechar resumo">×</button>
+            </header>
 
-        <div class="cart-items"></div>
-
-        <div class="cart-sidebar__actions">
-            <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
-        </div>
-    </aside>
-</div>
-
-<div class="checkout-overlay" id="checkoutOverlay">
-    <div class="checkout-panel">
-        <h2>Confirme seus dados</h2>
-        <div class="checkout-summary">
-            <p>Produtos selecionados</p>
-            <ul id="checkoutList"></ul>
-            <p id="checkoutTotals"></p>
-        </div>
-        <form id="checkoutForm" method="POST" action="submit.php">
-            <div class="form-grid">
-                <label>Nome completo
-                    <input type="text" name="full_name" required placeholder="Digite seu nome">
-                </label>
-                <label>Melhor e-mail
-                    <input type="email" name="email" required placeholder="contato@seudominio.com">
-                </label>
-                <label>WhatsApp com DDD
-                    <input type="tel" name="whatsapp" required placeholder="(00) 00000-0000">
-                </label>
+            <div class="cart-sidebar__metrics">
+                <div>
+                    <span>Itens</span>
+                    <strong id="summaryItemsSecondary">0</strong>
+                    <span id="summaryItems" class="sr-only">0</span>
+                </div>
+                <div>
+                    <span>Investimento</span>
+                    <strong id="cartInvest">R$ 0,00</strong>
+                    <span id="summaryValue" class="sr-only">R$ 0,00</span>
+                </div>
+                <div>
+                    <span>Economia estimada</span>
+                    <strong id="cartSavingsValue">R$ 0,00</strong>
+                    <span id="summarySavings" class="sr-only">R$ 0,00</span>
+                </div>
             </div>
-            <p>Confirmando você autoriza contato da Vésteme Modas sobre Black Friday, ofertas e logística.</p>
-            <input type="hidden" name="cart_payload" id="cartPayload">
-            <input type="hidden" name="merge_previous" id="mergePrevious" value="no">
-            <div class="checkout-actions">
-                <button type="button" class="ghost" id="closeCheckout">Editar carrinho</button>
-                <input type="submit" value="Confirmar interesse" class="solid">
+
+            <div class="cart-items"></div>
+
+            <div class="cart-sidebar__actions">
+                <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
             </div>
-        </form>
+        </aside>
     </div>
-</div>
 
-<div class="merge-overlay" id="mergeOverlay" aria-hidden="true">
-    <div class="merge-card">
-        <button class="merge-close" type="button" id="closeMergeModal" aria-label="Fechar aviso">&times;</button>
-        <p class="merge-kicker">Pedido encontrado</p>
-        <h3>Você já tem um pedido ativo para <span id="mergeEmail"></span></h3>
-        <p id="mergeInfo"></p>
-        <div class="merge-actions">
-            <button type="button" class="merge-option primary" id="mergeAppend">Somar itens ao pedido existente</button>
-            <button type="button" class="merge-option secondary" id="mergeReplace">Substituir pelo novo pedido</button>
+    <div class="checkout-overlay" id="checkoutOverlay">
+        <div class="checkout-panel">
+            <h2>Confirme seus dados</h2>
+            <div class="checkout-summary">
+                <p>Produtos selecionados</p>
+                <ul id="checkoutList"></ul>
+                <p id="checkoutTotals"></p>
+            </div>
+            <form id="checkoutForm" method="POST" action="submit.php">
+                <div class="form-grid">
+                    <label>Nome completo
+                        <input type="text" name="full_name" required placeholder="Digite seu nome">
+                    </label>
+                    <label>Melhor e-mail
+                        <input type="email" name="email" required placeholder="contato@seudominio.com">
+                    </label>
+                    <label>WhatsApp com DDD
+                        <input type="tel" name="whatsapp" required placeholder="(00) 00000-0000">
+                    </label>
+                </div>
+                <p>Confirmando você autoriza contato da Vésteme Modas sobre Black Friday, ofertas e logística.</p>
+                <input type="hidden" name="cart_payload" id="cartPayload">
+                <input type="hidden" name="merge_previous" id="mergePrevious" value="no">
+                <div class="checkout-actions">
+                    <button type="button" class="ghost" id="closeCheckout">Editar carrinho</button>
+                    <input type="submit" value="Confirmar interesse" class="solid">
+                </div>
+            </form>
         </div>
     </div>
-</div>
 
-<footer>
-    Vésteme Modas &mdash; Experiência exclusiva Black Friday com acesso controlado.
-</footer>
-<script>
-    window.catalogProducts = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-    window.catalogById = {};
-    if (Array.isArray(window.catalogProducts)) {
-        window.catalogProducts.forEach(function (p) {
-            if (p && p.id) {
-                window.catalogById[p.id] = p;
-            }
-        });
-    }
-</script>
-<script src="assets/js/main.js"></script>
-<script src="assets/js/catalog.js"></script>
+    <div class="merge-overlay" id="mergeOverlay" aria-hidden="true">
+        <div class="merge-card">
+            <button class="merge-close" type="button" id="closeMergeModal" aria-label="Fechar aviso">&times;</button>
+            <p class="merge-kicker">Pedido encontrado</p>
+            <h3>Você já tem um pedido ativo para <span id="mergeEmail"></span></h3>
+            <p id="mergeInfo"></p>
+            <div class="merge-actions">
+                <button type="button" class="merge-option primary" id="mergeAppend">Somar itens ao pedido existente</button>
+                <button type="button" class="merge-option secondary" id="mergeReplace">Substituir pelo novo pedido</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Vésteme Modas &mdash; Experiência exclusiva Black Friday com acesso controlado.
+    </footer>
+    <script>
+        window.catalogProducts = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+        window.catalogById = {};
+        if (Array.isArray(window.catalogProducts)) {
+            window.catalogProducts.forEach(function(p) {
+                if (p && p.id) {
+                    window.catalogById[p.id] = p;
+                }
+            });
+        }
+    </script>
+    <script src="assets/js/main.js"></script>
+    <script src="assets/js/catalog.js"></script>
