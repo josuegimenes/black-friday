@@ -1,4 +1,4 @@
-const currency = new Intl.NumberFormat('pt-BR', {
+﻿const currency = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
 });
@@ -29,6 +29,11 @@ const cartInvest = document.getElementById('cartInvest');
 const cartSavingsValue = document.getElementById('cartSavingsValue');
 const summaryItemsSecondary = document.getElementById('summaryItemsSecondary');
 const checkoutOverlay = document.getElementById('checkoutOverlay');
+const cartSidebar = document.getElementById('cartSidebar');
+const cartSidebarOverlay = document.getElementById('cartSidebarOverlay');
+const cartToggle = document.getElementById('cartToggle');
+const cartBadge = document.getElementById('cartBadge');
+const closeCartSidebarBtn = document.getElementById('closeCartSidebar');
 const checkoutList = document.getElementById('checkoutList');
 const checkoutTotals = document.getElementById('checkoutTotals');
 const cartPayloadInput = document.getElementById('cartPayload');
@@ -131,6 +136,7 @@ const renderCart = () => {
             renderCart();
             refreshSummary();
             updateCheckoutModal();
+            updateCartBadge();
         });
     });
 };
@@ -143,6 +149,7 @@ const refreshSummary = () => {
     if (summarySavings) summarySavings.textContent = currency.format(totalSavings);
     if (cartInvest) cartInvest.textContent = currency.format(totalValue);
     if (cartSavingsValue) cartSavingsValue.textContent = currency.format(totalSavings);
+    updateCartBadge();
 };
 
 const createKey = (id, size, color) => `${id}__${size}__${color}`;
@@ -264,24 +271,36 @@ const mountItem = (product, size, color, quantity, thumb = null) => {
 };
 
 
-const attachGalleryControls = () => {
-    document.querySelectorAll('[data-product-card]').forEach((card) => {
-        const mainWrapper = card.querySelector('[data-gallery-main]');
-        const mainImage = mainWrapper?.querySelector('img');
-        if (!mainImage) return;
+const setMainMedia = (card, type, src, alt = '') => {
+    const mainWrapper = card.querySelector('[data-gallery-main]');
+    if (!mainWrapper || !src) return;
+    mainWrapper.dataset.mediaType = type;
+    if (type === 'video') {
+        mainWrapper.innerHTML = `<video playsinline controls autoplay loop muted src="${src}"></video>`;
+    } else {
+        mainWrapper.innerHTML = `<img src="${src}" alt="${alt}">`;
+    }
+};
 
-        const thumbs = card.querySelectorAll('[data-gallery-thumb]');
-        thumbs.forEach((thumb) => {
-            thumb.addEventListener('click', () => {
-                const target = thumb.dataset.image;
-                if (!target || mainImage.src.endsWith(target)) return;
+const initGallery = (card) => {
+    const title = card.querySelector('h3')?.textContent || '';
+    const mainWrapper = card.querySelector('[data-gallery-main]');
+    const thumbs = card.querySelectorAll('[data-gallery-thumb]');
+    if (!mainWrapper || thumbs.length === 0) return;
 
-                mainImage.src = target;
-                thumbs.forEach((btn) => btn.classList.remove('is-active'));
-                thumb.classList.add('is-active');
-            });
+    thumbs.forEach((thumb) => {
+        thumb.addEventListener('click', () => {
+            thumbs.forEach((btn) => btn.classList.remove('is-active'));
+            thumb.classList.add('is-active');
+            const type = thumb.dataset.mediaType || 'image';
+            const src = thumb.dataset.src || thumb.dataset.image;
+            setMainMedia(card, type, src, title);
         });
     });
+};
+
+const attachGalleryControls = () => {
+    document.querySelectorAll('[data-product-card]').forEach((card) => initGallery(card));
 };
 
 const attachCardEvents = () => {
@@ -290,10 +309,99 @@ const attachCardEvents = () => {
         const product = getProductMeta(productId);
         if (!product) return;
 
-        const sizeSelect = card.querySelector('select[name="size"]');
+        const colorDataScript = card.querySelector('.color-media-data');
+        let colorMedia = {};
+        if (colorDataScript) {
+            try {
+                colorMedia = JSON.parse(colorDataScript.textContent || '{}');
+            } catch (error) {
+                console.warn('[BF_DEBUG] Erro ao ler media de cores', error);
+            }
+        }
+
         const colorSelect = card.querySelector('select[name="color"]');
+        const sizeSelect = card.querySelector('select[name="size"]');
         const quantityInput = card.querySelector('input[name="quantity"]');
         const addButton = card.querySelector('[data-add-to-cart]');
+        const openCartButtons = card.querySelectorAll('[data-open-cart]');
+
+        let activeColor = card.dataset.activeColor || Object.keys(colorMedia)[0] || '';
+
+        const setSelectValue = (selectEl, value) => {
+            if (!selectEl) return;
+            Array.from(selectEl.options).forEach((opt) => {
+                opt.selected = opt.value === value;
+            });
+        };
+
+        const rebuildThumbs = (colorSlug) => {
+            const media = colorMedia[colorSlug];
+            if (!media) return;
+            const thumbsRail = card.querySelector('[data-thumbs]');
+            if (!thumbsRail) return;
+            thumbsRail.innerHTML = '';
+            let firstSrc = null;
+            let firstType = 'image';
+
+            const pushThumb = (type, src, isActive = false) => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `media-thumb${type === 'video' ? ' media-thumb-video' : ''}${isActive ? ' is-active' : ''}`;
+                btn.dataset.galleryThumb = '';
+                btn.dataset.mediaType = type;
+                btn.dataset.src = src;
+                if (type === 'video') {
+                    btn.innerHTML = '<span class="video-icon">&#9654;</span>';
+                } else {
+                    btn.innerHTML = `<img src="${src}" alt="miniatura">`;
+                }
+                thumbsRail.appendChild(btn);
+            };
+
+            if (media.primary) {
+                firstSrc = media.primary;
+                pushThumb('image', media.primary, true);
+            }
+            (media.gallery || []).forEach((img) => {
+                if (!firstSrc) firstSrc = img;
+                pushThumb('image', img, false);
+            });
+            (media.videos || []).forEach((vid) => {
+                if (!firstSrc) {
+                    firstSrc = vid;
+                    firstType = 'video';
+                }
+                pushThumb('video', vid, false);
+            });
+
+            if (firstSrc) {
+                setMainMedia(card, firstType, firstSrc, product.name);
+            }
+            initGallery(card);
+        };
+
+        const colorPills = card.querySelectorAll('[data-color-option]');
+        colorPills.forEach((pill) => {
+            pill.addEventListener('click', () => {
+                activeColor = pill.dataset.color || '';
+                colorPills.forEach((p) => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                setSelectValue(colorSelect, activeColor);
+                rebuildThumbs(activeColor);
+            });
+        });
+
+        const sizePills = card.querySelectorAll('[data-size-option]');
+        sizePills.forEach((pill) => {
+            pill.addEventListener('click', () => {
+                const val = pill.dataset.size || '';
+                sizePills.forEach((p) => p.classList.remove('is-active'));
+                pill.classList.add('is-active');
+                setSelectValue(sizeSelect, val);
+            });
+        });
+
+        rebuildThumbs(activeColor);
 
         addButton?.addEventListener('click', () => {
             const size = sizeSelect?.value;
@@ -319,13 +427,11 @@ const attachCardEvents = () => {
             }
 
             let thumb = null;
-            if (product && product.thumb) {
+            const mainImage = card.querySelector('[data-gallery-main] img');
+            if (mainImage?.src) {
+                thumb = mainImage.src;
+            } else if (product && product.thumb) {
                 thumb = product.thumb;
-            } else {
-                const mainImage = card.querySelector('[data-gallery-main] img');
-                if (mainImage?.src) {
-                    thumb = mainImage.src;
-                }
             }
 
             const item = mountItem(product, size, color, Math.max(1, quantity), thumb);
@@ -338,6 +444,13 @@ const attachCardEvents = () => {
             renderCart();
             refreshSummary();
             updateCheckoutModal();
+            openCartSidebar();
+        });
+
+        openCartButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                openCartSidebar();
+            });
         });
     });
 };
@@ -469,6 +582,27 @@ const openCheckout = () => {
     updateCheckoutModal();
 };
 
+const openCartSidebar = () => {
+    if (cartSidebar) {
+        cartSidebar.classList.add('is-open');
+        cartSidebar.setAttribute('aria-hidden', 'false');
+    }
+};
+
+const closeCartSidebar = () => {
+    if (cartSidebar) {
+        cartSidebar.classList.remove('is-open');
+        cartSidebar.setAttribute('aria-hidden', 'true');
+    }
+};
+
+const updateCartBadge = () => {
+    if (!cartBadge) return;
+    const count = calcTotals().totalItems;
+    cartBadge.textContent = count;
+    cartBadge.style.display = count > 0 ? 'flex' : 'none';
+};
+
 const triggerButton = document.getElementById('triggerCheckout');
 const closeButton = document.getElementById('closeCheckout');
 
@@ -479,6 +613,17 @@ checkoutOverlay?.addEventListener('click', (event) => {
         closeCheckout();
     }
 });
+
+cartToggle?.addEventListener('click', () => {
+    if (cartSidebar?.classList.contains('is-open')) {
+        closeCartSidebar();
+    } else {
+        openCartSidebar();
+    }
+});
+
+cartSidebarOverlay?.addEventListener('click', closeCartSidebar);
+closeCartSidebarBtn?.addEventListener('click', closeCartSidebar);
 
 checkoutForm?.addEventListener('submit', async (event) => {
     if (skipNextSubmitValidation) {
@@ -546,3 +691,7 @@ window.addEventListener('storage', (event) => {
         updateCheckoutModal();
     }
 });
+
+
+
+

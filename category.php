@@ -223,9 +223,186 @@ function load_asset_products(string $slug, array $fallbackProducts, array $prici
     return $products;
 }
 
-$assetProducts = load_asset_products($slug, $products, $pricingOverrides);
-if (!empty($assetProducts)) {
-    $products = $assetProducts;
+$mediaBaseDir = __DIR__ . '/assets/img/saias';
+
+function asset_public_path(string $absolutePath): string
+{
+    $base = rtrim(str_replace('\\', '/', __DIR__), '/') . '/';
+    $normalized = str_replace('\\', '/', $absolutePath);
+    $relative = str_starts_with($normalized, $base) ? substr($normalized, strlen($base)) : $normalized;
+    return implode('/', array_map('rawurlencode', explode('/', $relative)));
+}
+
+function parse_payment_lines(array $lines): array
+{
+    $payments = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') continue;
+        if (preg_match('/([0-9]+[,\\.][0-9]{2})/', $line, $m)) {
+            $price = (float) str_replace(',', '.', $m[1]);
+            $payments[] = ['label' => $line, 'price' => $price];
+        } else {
+            $payments[] = ['label' => $line, 'price' => null];
+        }
+    }
+    return $payments;
+}
+
+function parse_sizes_options(?string $line): array
+{
+    if (!$line) return [];
+    $options = [];
+    if (preg_match_all('/([A-Za-z0-9]+)\s*-\s*([0-9 ]+)/u', $line, $matches, PREG_SET_ORDER)) {
+        foreach ($matches as $match) {
+            $code = trim($match[1]);
+            $numbers = preg_replace('/\s+/', '/', trim($match[2]));
+            $options[] = [
+                'value' => $code,
+                'label' => sprintf('%s (%s)', $code, $numbers),
+            ];
+        }
+    }
+    return $options;
+}
+
+function build_saias_products(string $baseDir): array
+{
+    if (!is_dir($baseDir)) return [];
+
+    $products = [];
+
+    foreach (scandir($baseDir) as $productDir) {
+        if ($productDir === '.' || $productDir === '..') continue;
+        $productPath = $baseDir . '/' . $productDir;
+        if (!is_dir($productPath)) continue;
+
+        $descFile = $productPath . '/Descrição.md';
+        $metaText = is_file($descFile) ? ensure_utf8((string)file_get_contents($descFile)) : '';
+        $metaLines = preg_split('/\r\n|\r|\n/', $metaText) ?: [];
+        $name = trim($metaLines[0] ?? $productDir);
+
+        $fabric = null;
+        $sizesLine = null;
+        $infoLines = [];
+        $measureLines = [];
+        $paymentLines = [];
+        $mode = null;
+
+        foreach ($metaLines as $line) {
+            $trim = trim($line);
+            if (stripos($trim, 'Tecido:') === 0) {
+                $fabric = trim(substr($trim, strlen('Tecido:')));
+                continue;
+            }
+            if (stripos($trim, 'Tamanhos') === 0) {
+                $sizesLine = trim(substr($trim, strlen('Tamanhos:')));
+                continue;
+            }
+            if (stripos($trim, 'INFORMA') === 0) {
+                $mode = 'info';
+                continue;
+            }
+            if (stripos($trim, 'MEDIDAS') === 0) {
+                $mode = 'measure';
+                continue;
+            }
+            if (stripos($trim, 'FORMAS DE PAGAMENTO') === 0) {
+                $mode = 'payment';
+                continue;
+            }
+
+            if ($trim === '') continue;
+
+            if ($mode === 'info') $infoLines[] = $trim;
+            elseif ($mode === 'measure') $measureLines[] = $trim;
+            elseif ($mode === 'payment') $paymentLines[] = $trim;
+        }
+
+        $payments = parse_payment_lines($paymentLines);
+        $salePrice = $payments[0]['price'] ?? null;
+        $originalPrice = $payments[1]['price'] ?? ($salePrice ? $salePrice * 1.2 : null);
+        $sizeOptions = parse_sizes_options($sizesLine);
+
+        $colors = [];
+        foreach (scandir($productPath) as $colorDir) {
+            if ($colorDir === '.' || $colorDir === '..') continue;
+            $colorPath = $productPath . '/' . $colorDir;
+            if (!is_dir($colorPath)) continue;
+            if (stripos($colorDir, 'descri') === 0) continue;
+
+            $gallery = [];
+            $primary = null;
+            $videos = [];
+
+            foreach (scandir($colorPath) as $asset) {
+                if ($asset === '.' || $asset === '..') continue;
+                $assetPath = $colorPath . '/' . $asset;
+                if (is_dir($assetPath) && strtolower($asset) === 'video') {
+                    foreach (scandir($assetPath) as $vid) {
+                        if ($vid === '.' || $vid === '..') continue;
+                        $ext = strtolower(pathinfo($vid, PATHINFO_EXTENSION));
+                        if (in_array($ext, ['mp4', 'mov'])) {
+                            $videos[] = asset_public_path($assetPath . '/' . $vid);
+                        }
+                    }
+                    continue;
+                }
+                if (is_file($assetPath)) {
+                    $ext = strtolower(pathinfo($assetPath, PATHINFO_EXTENSION));
+                    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+                    $relative = asset_public_path($assetPath);
+                    if (stripos($asset, 'principal') === 0) {
+                        $primary = $relative;
+                    } else {
+                        $gallery[] = $relative;
+                    }
+                }
+            }
+
+            if (!$primary && $gallery) {
+                $primary = $gallery[0];
+            }
+
+            $colors[] = [
+                'label' => $colorDir,
+                'slug' => slugify($colorDir),
+                'primary' => $primary,
+                'gallery' => $gallery,
+                'videos' => $videos,
+            ];
+        }
+
+        if (empty($colors)) continue;
+
+        $products[] = [
+            'id' => slugify($name ?: $productDir),
+            'name' => $name ?: $productDir,
+            'fabric' => $fabric,
+            'sizes_line' => $sizesLine ?: '--',
+            'sizes_parsed' => $sizeOptions,
+            'info' => $infoLines,
+            'measures' => $measureLines,
+            'payments' => $payments,
+            'original_price' => $originalPrice,
+            'sale_price' => $salePrice,
+            'colors' => $colors,
+            'description_raw' => $metaText,
+            'thumb' => $colors[0]['primary'] ?? '',
+        ];
+    }
+
+    return $products;
+}
+
+if ($slug === 'saias') {
+    $products = build_saias_products($mediaBaseDir);
+    $category['products'] = $products;
+} else {
+    $assetProducts = load_asset_products($slug, $products, $pricingOverrides);
+    if (!empty($assetProducts)) {
+        $products = $assetProducts;
+    }
 }
 
 $otherCategories = array_filter(
@@ -233,6 +410,7 @@ $otherCategories = array_filter(
     fn($key) => $key !== $slug,
     ARRAY_FILTER_USE_KEY
 );
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -267,119 +445,196 @@ $otherCategories = array_filter(
             <span class="label">Seg</span>
         </div>
     </div>
+    <button class="cart-toggle" id="cartToggle" aria-label="Abrir carrinho">
+        🛒
+        <span class="cart-badge" id="cartBadge">0</span>
+    </button>
 </header>
 
 <main class="category-shell">
     <section class="catalog-section" id="produtos">
-        <div class="product-grid">
+        <div class="product-grid product-grid-neo">
             <?php foreach ($products as $product): ?>
                 <?php
-                    $gallery = !empty($product['gallery']) ? $product['gallery'] : [$product['thumb']];
-                    $sizeNotes = $product['size_notes'] ?? [];
-                    $quantities = $product['quantities'] ?? [];
+                    $colors = $product['colors'] ?? [];
+                    if (empty($colors)) {
+                        $fallbackGallery = $product['gallery'] ?? ($product['thumb'] ? [$product['thumb']] : []);
+                        $colors = [[
+                            'label' => 'Única',
+                            'slug' => 'default',
+                            'primary' => $fallbackGallery[0] ?? ($product['thumb'] ?? ''),
+                            'gallery' => $fallbackGallery,
+                            'videos' => [],
+                        ]];
+                    }
+                    $firstColor = $colors[0] ?? null;
+                    $colorMediaMap = [];
+                    foreach ($colors as $color) {
+                        $colorMediaMap[$color['slug']] = [
+                            'label' => $color['label'],
+                            'primary' => $color['primary'],
+                            'gallery' => $color['gallery'],
+                            'videos' => $color['videos'],
+                        ];
+                    }
+                    $colorsJson = htmlspecialchars(json_encode($colorMediaMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                    $initialColorSlug = $firstColor['slug'] ?? '';
+                    $initialPrimary = $firstColor['primary'] ?? '';
+                    $initialGallery = $firstColor['gallery'] ?? [];
+                    $initialVideos = $firstColor['videos'] ?? [];
+                    $sizesLine = $product['sizes_line'] ?? (!empty($product['sizes']) ? implode(' ', (array)$product['sizes']) : '');
+                    $sizeOptions = $product['sizes_parsed'] ?? [];
+                    if (empty($sizeOptions)) {
+                        $fallbackTokens = array_values(array_unique(array_filter(preg_split('/\s+/', preg_replace('/[^A-Za-z0-9\s]/', ' ', $sizesLine ?? '')), 'strlen')));
+                        if (empty($fallbackTokens)) {
+                            $fallbackTokens = ['--'];
+                        }
+                        $sizeOptions = array_map(static fn($token) => ['value' => $token, 'label' => $token], $fallbackTokens);
+                    }
+                    $payments = $product['payments'] ?? [];
+                    $salePrice = $product['sale_price'] ?? 0;
+                    $originalPrice = $product['original_price'] ?? $salePrice;
+                    $economy = max(0, ($originalPrice ?? 0) - ($salePrice ?? 0));
                 ?>
-                <article class="product-card" data-product-card data-product-id="<?= htmlspecialchars($product['id']) ?>">
-                    <div class="product-media">
-                        <div class="product-thumb" data-gallery-main>
-                            <img src="<?= htmlspecialchars($gallery[0]) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                <article class="product-card neo-layout" data-product-card data-product-id="<?= htmlspecialchars($product['id']) ?>" data-active-color="<?= htmlspecialchars($initialColorSlug) ?>">
+                    <script type="application/json" class="color-media-data"><?= $colorsJson ?></script>
+
+                    <div class="media-column">
+                        <div class="thumbs-rail" data-thumbs>
+                            <?php if ($initialPrimary): ?>
+                                <button type="button" class="media-thumb is-active" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($initialPrimary) ?>">
+                                    <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
+                                </button>
+                            <?php endif; ?>
+                            <?php foreach ($initialGallery as $image): ?>
+                                <button type="button" class="media-thumb" data-gallery-thumb data-media-type="image" data-src="<?= htmlspecialchars($image) ?>">
+                                    <img src="<?= htmlspecialchars($image) ?>" alt="miniatura <?= htmlspecialchars($product['name']) ?>">
+                                </button>
+                            <?php endforeach; ?>
+                            <?php foreach ($initialVideos as $video): ?>
+                                <button type="button" class="media-thumb media-thumb-video" data-gallery-thumb data-media-type="video" data-src="<?= htmlspecialchars($video) ?>">
+                                    <span class="video-icon">▶</span>
+                                </button>
+                            <?php endforeach; ?>
                         </div>
-                        <?php if (count($gallery) > 1): ?>
-                            <div class="product-thumbs">
-                                <?php foreach ($gallery as $index => $image): ?>
-                                    <button type="button" class="thumb<?= $index === 0 ? ' is-active' : '' ?>" data-gallery-thumb data-image="<?= htmlspecialchars($image) ?>">
-                                        <img src="<?= htmlspecialchars($image) ?>" alt="Pre-visualizacao <?= $index + 1 ?>">
-                                    </button>
-                                <?php endforeach; ?>
+                        <div class="media-viewer" data-gallery-main data-media-type="image">
+                            <?php if ($initialPrimary): ?>
+                                <img src="<?= htmlspecialchars($initialPrimary) ?>" alt="<?= htmlspecialchars($product['name']) ?>">
+                            <?php endif; ?>
+                        </div>
+                    </div>
+
+                    <div class="product-panel">
+                        <div class="panel-head">
+                            <span class="badge status-badge">Novo</span>
+                            <div class="panel-title">
+                                <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
+                                <h3><?= htmlspecialchars($product['name']) ?></h3>
                             </div>
-                        <?php endif; ?>
-                    </div>
+                        </div>
 
-                    <div class="product-content">
-                        <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
-                        <h3><?= htmlspecialchars($product['name']) ?></h3>
-                        <ul class="product-meta">
-                            <?php if (!empty($product['fabric'])): ?>
-                                <li><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></li>
-                            <?php endif; ?>
-                            <?php if (!empty($product['colors'])): ?>
-                                <li><strong>Cores:</strong> <?= htmlspecialchars(implode(', ', $product['colors'])) ?></li>
-                            <?php endif; ?>
-                            <?php if (!empty($sizeNotes)): ?>
-                                <li><strong>Grade:</strong>
-                                    <?php foreach ($sizeNotes as $code => $note): ?>
-                                        <span><?= htmlspecialchars($code) ?><?= $note ? ' (' . htmlspecialchars($note) . ')' : '' ?></span>
+                        <div class="price-row">
+                            <div>
+                                <?php if ($originalPrice && $originalPrice > $salePrice): ?>
+                                    <p class="price-before">R$ <?= number_format($originalPrice, 2, ',', '.') ?></p>
+                                <?php endif; ?>
+                                <p class="price-now">R$ <?= number_format($salePrice, 2, ',', '.') ?></p>
+                                <?php if (!empty($payments[0]['label'])): ?>
+                                    <p class="payment-hint"><?= htmlspecialchars($payments[0]['label']) ?></p>
+                                <?php endif; ?>
+                            </div>
+                            <span class="saving-pill">Economize <?= number_format($economy, 2, ',', '.') ?> por peca</span>
+                        </div>
+
+                        <div class="selectors neo stacked">
+                            <div class="selector">
+                                <label>Cor</label>
+                                <div class="pill-group" data-color-pills>
+                                    <?php foreach ($colors as $color): ?>
+                                        <button type="button" class="pill <?= $color['slug'] === $initialColorSlug ? 'is-active' : '' ?>" data-color-option data-color="<?= htmlspecialchars($color['slug']) ?>">
+                                            <?= htmlspecialchars($color['label']) ?>
+                                        </button>
                                     <?php endforeach; ?>
-                                </li>
-                            <?php endif; ?>
-                            <?php if (!empty($quantities)): ?>
-                                <li><strong>Disponibilidade:</strong> <?= htmlspecialchars(implode(' | ', $quantities)) ?></li>
-                            <?php endif; ?>
-                        </ul>
-                        <?php if (!empty($product['description'])): ?>
-                            <p class="product-description"><?= nl2br(htmlspecialchars($product['description'])) ?></p>
-                        <?php endif; ?>
-                    </div>
+                                </div>
+                                <select name="color" data-color hidden>
+                                    <option value="">Selecione</option>
+                                    <?php foreach ($colors as $color): ?>
+                                        <option value="<?= htmlspecialchars($color['slug']) ?>" <?= $color['slug'] === $initialColorSlug ? 'selected' : '' ?>><?= htmlspecialchars($color['label']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                    <div class="product-actions">
-                        <div class="price-tag">
-                            <span class="anchor">De <?= number_format($product['original_price'], 2, ',', '.') ?></span>
-                            <span class="deal">por <?= number_format($product['sale_price'], 2, ',', '.') ?></span>
-                        </div>
-                        <span class="save-chip">Economize <?= number_format($product['original_price'] - $product['sale_price'], 2, ',', '.') ?> por peca</span>
+                            <div class="selector">
+                                <label>Tamanho</label>
+                                <div class="pill-group" data-size-pills>
+                                    <?php foreach ($sizeOptions as $opt): ?>
+                                        <button type="button" class="pill" data-size-option data-size="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></button>
+                                    <?php endforeach; ?>
+                                </div>
+                                <select name="size" data-size hidden>
+                                    <option value="">Selecione</option>
+                                    <?php foreach ($sizeOptions as $opt): ?>
+                                        <option value="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
 
-                        <div class="selector">
-                            <label>Tamanhos disponiveis</label>
-                            <select name="size">
-                                <option value="">Selecione</option>
-                                <?php foreach ($product['sizes'] as $size): ?>
-                                    <option value="<?= htmlspecialchars($size) ?>"><?= htmlspecialchars($size) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+                            <div class="selector quantity-compact">
+                                <label>Quantidade</label>
+                                <input type="number" name="quantity" min="1" value="1">
+                            </div>
                         </div>
-                        <div class="selector">
-                            <label>Cores</label>
-                            <select name="color">
-                                <option value="">Selecione</option>
-                                <?php foreach ($product['colors'] as $color): ?>
-                                    <option value="<?= htmlspecialchars($color) ?>"><?= htmlspecialchars($color) ?></option>
-                                <?php endforeach; ?>
-                            </select>
+
+                        <div class="product-meta-block">
+                            <?php if (!empty($product['fabric'])): ?>
+                                <p><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></p>
+                            <?php endif; ?>
+                            <?php if (!empty($product['info'])): ?>
+                                <div class="meta-list">
+                                    <strong>Informações:</strong>
+                                    <ul>
+                                        <?php foreach ($product['info'] as $info): ?>
+                                            <?php foreach (array_filter(array_map('trim', explode('|', $info))) as $piece): ?>
+                                                <li><?= htmlspecialchars($piece) ?></li>
+                                            <?php endforeach; ?>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($product['measures'])): ?>
+                                <div class="meta-list">
+                                    <strong>Medidas:</strong>
+                                    <ul>
+                                        <?php foreach ($product['measures'] as $measure): ?>
+                                            <?php foreach (array_filter(array_map('trim', explode('|', $measure))) as $piece): ?>
+                                                <li><?= htmlspecialchars($piece) ?></li>
+                                            <?php endforeach; ?>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
+                            <?php if (!empty($payments)): ?>
+                                <div class="meta-list">
+                                    <strong>Formas de pagamento:</strong>
+                                    <ul>
+                                        <?php foreach ($payments as $pay): ?>
+                                            <?php $label = $pay['label'] ?? ''; ?>
+                                            <?php foreach (array_filter(array_map('trim', explode('|', $label))) as $piece): ?>
+                                                <li><?= htmlspecialchars($piece) ?></li>
+                                            <?php endforeach; ?>
+                                        <?php endforeach; ?>
+                                    </ul>
+                                </div>
+                            <?php endif; ?>
                         </div>
-                        <div class="selector">
-                            <label>Quantidade</label>
-                            <input type="number" name="quantity" min="1" value="1">
-                            <small>Replique a grade ideal para o seu estoque.</small>
+
+                        <div class="actions-row">
+                            <button type="button" class="add-btn primary" data-add-to-cart>Adicionar ao carrinho</button>
+                            <button type="button" class="add-btn ghost" data-open-cart>Fechar carrinho</button>
                         </div>
-                        <button type="button" class="add-btn" data-add-to-cart>Adicionar ao carrinho</button>
                     </div>
                 </article>
             <?php endforeach; ?>
-        </div>
-
-        <div class="cart-panel">
-            <div class="cart-head">
-                <div>
-                    <p class="section-kicker">Carrinho vip</p>
-                    <h3>Previa do carrinho</h3>
-                </div>
-                <div class="cart-counter">
-                    <span>Itens</span>
-                    <strong id="summaryItemsSecondary">0</strong>
-                </div>
-            </div>
-            <div class="cart-items"></div>
-            <div class="cart-metrics">
-                <div>
-                    <span>Investimento</span>
-                    <strong id="cartInvest">R$ 0,00</strong>
-                </div>
-                <div>
-                    <span>Economia estimada</span>
-                    <strong id="cartSavingsValue">R$ 0,00</strong>
-                </div>
-            </div>
-            <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
-            <p class="cart-note">Liberamos os pagamentos seguindo a ordem de cadastro e estoque disponivel.</p>
         </div>
     </section>
 
@@ -405,6 +660,43 @@ $otherCategories = array_filter(
         </section>
     <?php endif; ?>
 </main>
+
+<div class="cart-sidebar" id="cartSidebar" aria-hidden="true">
+    <div class="cart-sidebar__overlay" id="cartSidebarOverlay"></div>
+    <aside class="cart-sidebar__drawer" id="cartDrawer">
+        <header class="cart-sidebar__head">
+            <div>
+                <p class="section-kicker">Carrinho VIP</p>
+                <h3>Resumo</h3>
+            </div>
+            <button class="cart-sidebar__close" id="closeCartSidebar" aria-label="Fechar resumo">×</button>
+        </header>
+
+        <div class="cart-sidebar__metrics">
+            <div>
+                <span>Itens</span>
+                <strong id="summaryItemsSecondary">0</strong>
+                <span id="summaryItems" class="sr-only">0</span>
+            </div>
+            <div>
+                <span>Investimento</span>
+                <strong id="cartInvest">R$ 0,00</strong>
+                <span id="summaryValue" class="sr-only">R$ 0,00</span>
+            </div>
+            <div>
+                <span>Economia estimada</span>
+                <strong id="cartSavingsValue">R$ 0,00</strong>
+                <span id="summarySavings" class="sr-only">R$ 0,00</span>
+            </div>
+        </div>
+
+        <div class="cart-items"></div>
+
+        <div class="cart-sidebar__actions">
+            <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
+        </div>
+    </aside>
+</div>
 
 <div class="checkout-overlay" id="checkoutOverlay">
     <div class="checkout-panel">
@@ -466,5 +758,3 @@ $otherCategories = array_filter(
 </script>
 <script src="assets/js/main.js"></script>
 <script src="assets/js/catalog.js"></script>
-</body>
-</html>

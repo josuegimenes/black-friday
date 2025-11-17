@@ -288,5 +288,13 @@ return [
             ],
         ],
     ],
+    'saias' => [
+        'name' => 'Saias',
+        'tagline' => 'Novos modelos curados para a Black com visual neon.',
+        'icon' => 'ri-skirt-line',
+        'hero_video' => '',
+        'cover_copy' => 'Explore as novas saias com caimento perfeito e fotos + vídeos integrados.',
+        'products' => [],
+    ],
 ];
 ?>
