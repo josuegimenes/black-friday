@@ -8,6 +8,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/CrFlwHsXKoOKTkX9kqvdJM';
 const PUBLIC_MEDIA_BASE = 'https://amaiorblack.vesteme.com.br';
+const ADMIN_EMAIL = 'carlagrtiago@gmail.com';
 
 function base_url(): string
 {
@@ -133,9 +134,9 @@ function create_mailer(array $config): PHPMailer
     $mailer->Timeout = (int)($config['timeout'] ?? 15);
     $mailer->setFrom(
         $config['from_email'] ?? 'contato@vesteme.com.br',
-        $config['from_name'] ?? 'Vesteme Black'
+        $config['from_name'] ?? 'Vésteme Black'
     );
-    $mailer->addReplyTo($config['from_email'] ?? 'contato@vesteme.com.br', $config['from_name'] ?? 'Vesteme Black');
+    $mailer->addReplyTo($config['from_email'] ?? 'contato@vesteme.com.br', $config['from_name'] ?? 'Vésteme Black');
     if (!empty($config['debug'])) {
         $mailer->SMTPDebug = (int) $config['debug'];
         $mailer->Debugoutput = static function ($str, $level) {
@@ -199,7 +200,7 @@ function send_confirmation_email(string $to, string $name, array $cartData, arra
         error_log('Config SMTP incompleta. E-mail nao enviado.');
         return;
     }
-    $subject = 'Parabéns! Sua reserva VIP foi confirmada ✨';
+    $subject = 'Parabéns! Seu interesse na Black da Vésteme foi confirmado 🎉';
     $altBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body));
 
     try {
@@ -212,6 +213,45 @@ function send_confirmation_email(string $to, string $name, array $cartData, arra
         $mailer->send();
     } catch (PHPMailerException $exception) {
         error_log('Erro ao enviar e-mail via PHPMailer: ' . $exception->getMessage());
+    }
+}
+
+function send_admin_notification(array $cartData, string $customerName, string $customerEmail, array $config): void
+{
+    if (empty($config['host']) || empty($config['username']) || empty($config['password'])) {
+        error_log('Config SMTP incompleta. Email admin nao enviado.');
+        return;
+    }
+
+    $totals = $cartData['totals'] ?? [];
+    $totalItems = (int)($totals['totalItems'] ?? 0);
+    $totalValue = (float)($totals['totalValue'] ?? 0);
+    $totalSavings = (float)($totals['totalSavings'] ?? 0);
+    $dateBr = format_brasilia_datetime();
+
+    $subject = 'Novo pedido na Black Vésteme';
+    $adminLink = base_url() . '/admin/login.php';
+    $body = sprintf(
+        "Novo pedido registrado.\n\nCliente: %s\nEmail: %s\nData/Hora (Brasília): %s\nItens: %d\nInvestimento: %s\nDesconto estimado: %s\n\nAcesse o admin para ver detalhes: %s",
+        $customerName ?: 'Cliente',
+        $customerEmail ?: '-',
+        $dateBr,
+        $totalItems,
+        format_currency($totalValue),
+        format_currency($totalSavings),
+        $adminLink
+    );
+
+    try {
+        $mailer = create_mailer($config);
+        $mailer->addAddress(ADMIN_EMAIL, 'Admin');
+        $mailer->Subject = $subject;
+        $mailer->Body = nl2br(htmlspecialchars($body, ENT_QUOTES, 'UTF-8'));
+        $mailer->AltBody = $body;
+        $mailer->isHTML(true);
+        $mailer->send();
+    } catch (PHPMailerException $exception) {
+        error_log('Erro ao enviar email admin: ' . $exception->getMessage());
     }
 }
 
@@ -295,6 +335,7 @@ $mailerConfig = load_mailer_config();
 if ($mailerConfig !== null) {
     try {
         send_confirmation_email($emailRaw ?: $email, $fullName, $cartData, $mailerConfig);
+        send_admin_notification($cartData, $fullName, $emailRaw ?: $email, $mailerConfig);
     } catch (Throwable $exception) {
         error_log('Erro ao enviar e-mail: ' . $exception->getMessage());
     }

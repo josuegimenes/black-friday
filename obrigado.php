@@ -30,5 +30,76 @@ $progress = 89;
     </div>
 </section>
 <script src="assets/js/main.js"></script>
+<script>
+// Confetes neon ao carregar a página
+(function () {
+    const colors = ['#ff007f', '#46fcb4', '#ffeb3b', '#40bfff'];
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.className = 'confetti-canvas';
+    canvas.style.position = 'fixed';
+    canvas.style.inset = 0;
+    canvas.style.pointerEvents = 'none';
+    canvas.style.zIndex = 9999;
+    document.body.appendChild(canvas);
+
+    let confetti = [];
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+
+    const resize = () => {
+        width = window.innerWidth;
+        height = window.innerHeight;
+        canvas.width = width;
+        canvas.height = height;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const random = (min, max) => Math.random() * (max - min) + min;
+
+    const init = (count = 120) => {
+        confetti = Array.from({ length: count }).map(() => ({
+            x: random(0, width),
+            y: random(-height, 0),
+            w: random(6, 10),
+            h: random(10, 18),
+            r: random(0, Math.PI * 2),
+            color: colors[Math.floor(random(0, colors.length))],
+            speed: random(2, 4),
+            swing: random(0.5, 1.5),
+        }));
+    };
+
+    const update = () => {
+        ctx.clearRect(0, 0, width, height);
+        confetti.forEach((c) => {
+            c.y += c.speed;
+            c.x += Math.sin(c.y * 0.01) * c.swing;
+            c.r += 0.02;
+            if (c.y > height) {
+                c.y = random(-height, 0);
+                c.x = random(0, width);
+            }
+            ctx.save();
+            ctx.translate(c.x, c.y);
+            ctx.rotate(c.r);
+            ctx.fillStyle = c.color;
+            ctx.fillRect(-c.w / 2, -c.h / 2, c.w, c.h);
+            ctx.restore();
+        });
+        requestAnimationFrame(update);
+    };
+
+    init();
+    update();
+
+    // remove apos 6 segundos para nao atrapalhar
+    setTimeout(() => {
+        canvas.remove();
+        window.removeEventListener('resize', resize);
+    }, 6000);
+})();
+</script>
 </body>
 </html>

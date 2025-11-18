@@ -38,6 +38,13 @@ const checkoutList = document.getElementById('checkoutList');
 const checkoutTotals = document.getElementById('checkoutTotals');
 const cartPayloadInput = document.getElementById('cartPayload');
 const checkoutForm = document.getElementById('checkoutForm');
+const checkoutSubmitBtn =
+    checkoutForm?.querySelector('.checkout-actions .solid') ||
+    checkoutForm?.querySelector('input[type="submit"]');
+const checkoutSubmitOriginalLabel =
+    checkoutSubmitBtn?.tagName?.toLowerCase() === 'input'
+        ? checkoutSubmitBtn?.value
+        : checkoutSubmitBtn?.textContent;
 const emailInput = document.querySelector('input[name="email"]');
 const whatsappInput = document.querySelector('input[name="whatsapp"]');
 const mergePreviousInput = document.getElementById('mergePrevious');
@@ -53,6 +60,8 @@ let existingLeadCheckedEmail = '';
 let mergeChoice = null;
 let pendingSubmit = null;
 let skipNextSubmitValidation = false;
+let isSubmitting = false;
+let submitResetTimer = null;
 
 const getCartIcon = () =>
     document.getElementById('cartToggle') ||
@@ -149,14 +158,16 @@ const calcTotals = () => {
     let totalItems = 0;
     let totalValue = 0;
     let totalSavings = 0;
+    let totalOriginal = 0;
 
     cartStore.forEach((item) => {
         totalItems += item.quantity;
         totalValue += item.quantity * item.salePrice;
+        totalOriginal += item.quantity * item.originalPrice;
         totalSavings += item.quantity * (item.originalPrice - item.salePrice);
     });
 
-    return { totalItems, totalValue, totalSavings };
+    return { totalItems, totalValue, totalSavings, totalOriginal };
 };
 
 const getCartSnapshot = () => ({
@@ -229,24 +240,29 @@ const renderCart = () => {
             cartItemsWrapper.appendChild(div);
         });
 
-        // Totais resumidos ao final da lista, em cards
+        // Totais resumidos ao final da lista, em formato de tabela
         const totals = calcTotals();
         const footer = document.createElement('div');
         footer.className = 'cart-summary-footer';
         footer.innerHTML = `
-            <div class="cart-summary-card">
-                <span class="label">Itens no carrinho</span>
-                <strong class="value">${totals.totalItems}</strong>
-            </div>
-            <div class="cart-summary-card">
-                <span class="label">Investimento</span>
-                <strong class="value">${currency.format(totals.totalValue)}</strong>
-            </div>
-            <div class="cart-summary-card">
-                <span class="label">Economia estimada</span>
-                <strong class="value value--highlight">${currency.format(totals.totalSavings)}</strong>
-                <span class="hint">comparado ao preço normal</span>
-            </div>
+            <table class="cart-summary-table" aria-label="Resumo do carrinho">
+                <tr>
+                    <td class="label">Itens no carrinho</td>
+                    <td class="value">${totals.totalItems}</td>
+                </tr>
+                <tr>
+                    <td class="label">Preço normal</td>
+                    <td class="value">${currency.format(totals.totalOriginal)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Desconto aplicado</td>
+                    <td class="value highlight">${currency.format(totals.totalSavings)}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total com descontos</td>
+                    <td class="value">${currency.format(totals.totalValue)}</td>
+                </tr>
+            </table>
         `;
         cartItemsWrapper.appendChild(footer);
     }
@@ -327,6 +343,36 @@ const refreshSummary = () => {
 const createKey = (id, size, color) => `${id}__${size}__${color}`;
 
 const closeCheckout = () => checkoutOverlay?.classList.remove('active');
+
+const setSubmittingState = (flag) => {
+    isSubmitting = flag;
+    if (!checkoutSubmitBtn) return;
+
+    if (flag) {
+        if (checkoutSubmitBtn.tagName.toLowerCase() === 'input') {
+            checkoutSubmitBtn.value = 'Enviando...';
+        } else {
+            checkoutSubmitBtn.textContent = 'Enviando...';
+        }
+        checkoutSubmitBtn.disabled = true;
+
+        // fallback: se ficar na página por qualquer motivo, reabilita após 10s
+        clearTimeout(submitResetTimer);
+        submitResetTimer = setTimeout(() => {
+            if (isSubmitting) {
+                setSubmittingState(false);
+            }
+        }, 10000);
+    } else {
+        checkoutSubmitBtn.disabled = false;
+        if (checkoutSubmitBtn.tagName.toLowerCase() === 'input') {
+            checkoutSubmitBtn.value = checkoutSubmitOriginalLabel || 'Confirmar interesse';
+        } else {
+            checkoutSubmitBtn.textContent = checkoutSubmitOriginalLabel || 'Confirmar interesse';
+        }
+        clearTimeout(submitResetTimer);
+    }
+};
 
 const updateCheckoutModal = () => {
     if (!checkoutOverlay) return;
@@ -877,6 +923,11 @@ cartSidebarOverlay?.addEventListener('click', closeCartSidebar);
 closeCartSidebarBtn?.addEventListener('click', closeCartSidebar);
 
 checkoutForm?.addEventListener('submit', async (event) => {
+    if (isSubmitting) {
+        event.preventDefault();
+        return;
+    }
+
     if (skipNextSubmitValidation) {
         skipNextSubmitValidation = false;
         return;
@@ -925,6 +976,8 @@ checkoutForm?.addEventListener('submit', async (event) => {
     debugCartSnapshot('ANTES DO SUBMIT checkoutForm');
 
     updateCheckoutModal();
+
+    setSubmittingState(true);
 });
 
 attachGalleryControls();
