@@ -52,6 +52,29 @@ function slugify(string $value): string
     return trim($slug ?? '', '-');
 }
 
+function format_color_label(string $value): string
+{
+    $trimmed = trim($value);
+    if ($trimmed === '') {
+        return '';
+    }
+
+    // Correções de grafia antes de aplicar título
+    $lower = mb_strtolower($trimmed, 'UTF-8');
+    $lower = str_replace(['marron', 'cafe'], ['marrom', 'café'], $lower);
+
+    // Título com todas as palavras em maiúscula inicial
+    $parts = preg_split('/(\s+)/u', $lower, -1, PREG_SPLIT_DELIM_CAPTURE);
+    foreach ($parts as $i => $part) {
+        if (trim($part) === '') {
+            continue;
+        }
+        $parts[$i] = mb_strtoupper(mb_substr($part, 0, 1, 'UTF-8'), 'UTF-8') . mb_substr($part, 1, null, 'UTF-8');
+    }
+
+    return implode('', $parts);
+}
+
 function relative_asset_path(string $absolutePath): string
 {
     $base = rtrim(str_replace('\\', '/', __DIR__), '/') . '/';
@@ -194,7 +217,8 @@ function load_asset_products(string $slug, array $fallbackProducts, array $prici
         $override = $pricingOverrides[$slug][$nameSlug] ?? [];
 
         $sizeOptions = !empty($meta['size_options']) ? $meta['size_options'] : ($fallback['sizes'] ?? []);
-        $colorOptions = !empty($meta['colors']) ? $meta['colors'] : ($fallback['colors'] ?? []);
+        $colorOptionsRaw = !empty($meta['colors']) ? $meta['colors'] : ($fallback['colors'] ?? []);
+        $colorOptions = array_map('format_color_label', (array)$colorOptionsRaw);
 
         if (empty($sizeOptions)) {
             $sizeOptions = ['Unico'];
@@ -365,7 +389,7 @@ function build_saias_products(string $baseDir): array
             }
 
             $colors[] = [
-                'label' => $colorDir,
+                'label' => format_color_label($colorDir),
                 'slug' => slugify($colorDir),
                 'primary' => $primary,
                 'gallery' => $gallery,
@@ -397,6 +421,12 @@ function build_saias_products(string $baseDir): array
 
 if ($slug === 'saias') {
     $products = build_saias_products($mediaBaseDir);
+    // Override precificacao para saias (preço antigo e promocional)
+    foreach ($products as &$prod) {
+        $prod['original_price'] = 159.99;
+        $prod['sale_price'] = 117.00;
+    }
+    unset($prod);
     $category['products'] = $products;
 } else {
     $assetProducts = load_asset_products($slug, $products, $pricingOverrides);
@@ -480,7 +510,7 @@ $otherCategories = array_filter(
                             'videos' => $color['videos'],
                         ];
                     }
-                    $colorsJson = htmlspecialchars(json_encode($colorMediaMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES, 'UTF-8');
+                    $colorsJson = json_encode($colorMediaMap, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     $initialColorSlug = $firstColor['slug'] ?? '';
                     $initialPrimary = $firstColor['primary'] ?? '';
                     $initialGallery = $firstColor['gallery'] ?? [];
@@ -558,18 +588,18 @@ $otherCategories = array_filter(
                         $paymentOptions = [
                             [
                                 'key' => 'pix',
-                                'label' => 'R$ 119,99 (à vista no pix)',
-                                'total' => 119.99,
+                                'label' => 'R$ 117,00 (à vista no pix)',
+                                'total' => 117.00,
                             ],
                             [
                                 'key' => '3x',
-                                'label' => 'R$ 149,99 (3x de 49,99)',
-                                'total' => 149.99,
+                                'label' => 'R$ 147,00 (3x de 49,00)',
+                                'total' => 147.00,
                             ],
                             [
                                 'key' => '12x',
-                                'label' => 'R$ 159,99 (12x de 13,33)',
-                                'total' => 159.99,
+                                'label' => 'R$ 157,00 (12x de 13,08)',
+                                'total' => 157.00,
                             ],
                         ];
                     }
