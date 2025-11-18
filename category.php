@@ -498,6 +498,81 @@ $otherCategories = array_filter(
                     $salePrice = $product['sale_price'] ?? 0;
                     $originalPrice = $product['original_price'] ?? $salePrice;
                     $economy = max(0, ($originalPrice ?? 0) - ($salePrice ?? 0));
+
+                    // Monta opcoes de pagamento (pix, 3x, 12x) e notas gerais
+                    $paymentOptions = [];
+                    $paymentNotes = [];
+                    foreach ($payments as $pay) {
+                        $label = trim((string)($pay['label'] ?? ''));
+                        $price = isset($pay['price']) ? (float)$pay['price'] : null;
+                        if ($label === '') {
+                            continue;
+                        }
+
+                        // linhas sem preço vão direto para notas gerais
+                        if ($price === null) {
+                            $paymentNotes[] = $label;
+                            continue;
+                        }
+
+                        $norm = mb_strtolower($label, 'UTF-8');
+                        if (strpos($norm, 'pix') !== false) {
+                            $total = $price;
+                            $paymentOptions[] = [
+                                'key' => 'pix',
+                                'label' => sprintf('R$ %s (à vista no Pix)', number_format($total, 2, ',', '.')),
+                                'total' => $total,
+                            ];
+                            continue;
+                        }
+                        if (strpos($norm, '3x') !== false || strpos($norm, '3 x') !== false) {
+                            $total = $price * 3;
+                            $paymentOptions[] = [
+                                'key' => '3x',
+                                'label' => sprintf('R$ %s (3x de %s)', number_format($total, 2, ',', '.'), number_format($price, 2, ',', '.')),
+                                'total' => $total,
+                            ];
+                            continue;
+                        }
+                        if (strpos($norm, '12x') !== false || strpos($norm, '12 x') !== false) {
+                            $total = $price * 12;
+                            $paymentOptions[] = [
+                                'key' => '12x',
+                                'label' => sprintf('R$ %s (12x de %s)', number_format($total, 2, ',', '.'), number_format($price, 2, ',', '.')),
+                                'total' => $total,
+                            ];
+                            continue;
+                        }
+                        $paymentNotes[] = $label;
+                    }
+                    if (empty($paymentOptions)) {
+                        $paymentOptions[] = [
+                            'key' => 'pix',
+                            'label' => sprintf('R$ %s (à vista)', number_format($salePrice, 2, ',', '.')),
+                            'total' => $salePrice,
+                        ];
+                    }
+
+                    // Override padrao para a seção de saias
+                    if ($slug === 'saias') {
+                        $paymentOptions = [
+                            [
+                                'key' => 'pix',
+                                'label' => 'R$ 119,99 (à vista no pix)',
+                                'total' => 119.99,
+                            ],
+                            [
+                                'key' => '3x',
+                                'label' => 'R$ 149,99 (3x de 49,99)',
+                                'total' => 149.99,
+                            ],
+                            [
+                                'key' => '12x',
+                                'label' => 'R$ 159,99 (12x de 13,33)',
+                                'total' => 159.99,
+                            ],
+                        ];
+                    }
                     ?>
                     <article class="product-card neo-layout" data-product-card data-product-id="<?= htmlspecialchars($product['id']) ?>" data-active-color="<?= htmlspecialchars($initialColorSlug) ?>">
                         <script type="application/json" class="color-media-data">
@@ -529,115 +604,158 @@ $otherCategories = array_filter(
                             </div>
                         </div>
 
-                        <div class="product-panel">
-                            <div class="panel-head">
-                                <span class="badge status-badge">Novo</span>
-                                <div class="panel-title">
-                                    <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
-                                    <h3><?= htmlspecialchars($product['name']) ?></h3>
-                                </div>
-                            </div>
-
-                            <div class="price-row">
-                                <div>
-                                    <?php if ($originalPrice && $originalPrice > $salePrice): ?>
-                                        <p class="price-before">R$ <?= number_format($originalPrice, 2, ',', '.') ?></p>
-                                    <?php endif; ?>
-                                    <p class="price-now">R$ <?= number_format($salePrice, 2, ',', '.') ?></p>
-                                    <?php if (!empty($payments[0]['label'])): ?>
-                                        <p class="payment-hint"><?= htmlspecialchars($payments[0]['label']) ?></p>
-                                    <?php endif; ?>
-                                </div>
-                                <span class="saving-pill">Economize <?= number_format($economy, 2, ',', '.') ?> por peca</span>
-                            </div>
-
-                            <div class="selectors neo stacked">
-                                <div class="selector">
-                                    <label>Cor</label>
-                                    <div class="pill-group" data-color-pills>
-                                        <?php foreach ($colors as $color): ?>
-                                            <button type="button" class="pill <?= $color['slug'] === $initialColorSlug ? 'is-active' : '' ?>" data-color-option data-color="<?= htmlspecialchars($color['slug']) ?>">
-                                                <?= htmlspecialchars($color['label']) ?>
-                                            </button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <select name="color" data-color hidden>
-                                        <option value="">Selecione</option>
-                                        <?php foreach ($colors as $color): ?>
-                                            <option value="<?= htmlspecialchars($color['slug']) ?>" <?= $color['slug'] === $initialColorSlug ? 'selected' : '' ?>><?= htmlspecialchars($color['label']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="selector">
-                                    <label>Tamanho</label>
-                                    <div class="pill-group" data-size-pills>
-                                        <?php foreach ($sizeOptions as $opt): ?>
-                                            <button type="button" class="pill" data-size-option data-size="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></button>
-                                        <?php endforeach; ?>
-                                    </div>
-                                    <select name="size" data-size hidden>
-                                        <option value="">Selecione</option>
-                                        <?php foreach ($sizeOptions as $opt): ?>
-                                            <option value="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-
-                                <div class="selector quantity-compact">
-                                    <label>Quantidade</label>
-                                    <input type="number" name="quantity" min="1" value="1">
-                                </div>
-                            </div>
-
-                            <div class="product-meta-block">
-                                <?php if (!empty($product['fabric'])): ?>
-                                    <p><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></p>
-                                <?php endif; ?>
-                                <?php if (!empty($product['info'])): ?>
-                                    <div class="meta-list">
-                                        <strong>Informações:</strong>
-                                        <ul>
-                                            <?php foreach ($product['info'] as $info): ?>
-                                                <?php foreach (array_filter(array_map('trim', explode('|', $info))) as $piece): ?>
-                                                    <li><?= htmlspecialchars($piece) ?></li>
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if (!empty($product['measures'])): ?>
-                                    <div class="meta-list">
-                                        <strong>Medidas:</strong>
-                                        <ul>
-                                            <?php foreach ($product['measures'] as $measure): ?>
-                                                <?php foreach (array_filter(array_map('trim', explode('|', $measure))) as $piece): ?>
-                                                    <li><?= htmlspecialchars($piece) ?></li>
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                <?php endif; ?>
-                                <?php if (!empty($payments)): ?>
-                                    <div class="meta-list">
-                                        <strong>Formas de pagamento:</strong>
-                                        <ul>
-                                            <?php foreach ($payments as $pay): ?>
-                                                <?php $label = $pay['label'] ?? ''; ?>
-                                                <?php foreach (array_filter(array_map('trim', explode('|', $label))) as $piece): ?>
-                                                    <li><?= htmlspecialchars($piece) ?></li>
-                                                <?php endforeach; ?>
-                                            <?php endforeach; ?>
-                                        </ul>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-
-                            <div class="actions-row">
-                                <button type="button" class="add-btn primary" data-add-to-cart>Adicionar ao carrinho</button>
-                                <button type="button" class="add-btn ghost" data-open-cart>Fechar carrinho</button>
+                    <div class="product-panel">
+                        <div class="panel-head">
+                            <span class="badge status-badge">Novo</span>
+                            <div class="panel-title">
+                                <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
+                                <h3><?= htmlspecialchars($product['name']) ?></h3>
                             </div>
                         </div>
+
+                        <div class="price-row">
+                            <div>
+                                <?php if ($originalPrice && $originalPrice > $salePrice): ?>
+                                    <p class="price-before">R$ <?= number_format($originalPrice, 2, ',', '.') ?></p>
+                                <?php endif; ?>
+                                <p class="price-now">R$ <?= number_format($salePrice, 2, ',', '.') ?></p>
+                                <?php if (!empty($payments[0]['label'])): ?>
+                                    <span class="payment-chip">no Pix</span>
+                                <?php endif; ?>
+                            </div>
+                            <span class="saving-pill">Economize <?= number_format($economy, 2, ',', '.') ?> por peca</span>
+                        </div>
+
+                        <div class="selectors neo stacked">
+                            <div class="selector">
+                                <label>Cor</label>
+                                <div class="pill-group" data-color-pills>
+                                    <?php foreach ($colors as $color): ?>
+                                        <button type="button" class="pill <?= $color['slug'] === $initialColorSlug ? 'is-active' : '' ?>" data-color-option data-color="<?= htmlspecialchars($color['slug']) ?>">
+                                            <?= htmlspecialchars($color['label']) ?>
+                                        </button>
+                                    <?php endforeach; ?>
+                                </div>
+                                <select name="color" data-color hidden>
+                                    <option value="">Selecione</option>
+                                    <?php foreach ($colors as $color): ?>
+                                        <option value="<?= htmlspecialchars($color['slug']) ?>" <?= $color['slug'] === $initialColorSlug ? 'selected' : '' ?>><?= htmlspecialchars($color['label']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="selector">
+                                <label>Tamanho</label>
+                                <div class="pill-group" data-size-pills>
+                                    <?php foreach ($sizeOptions as $opt): ?>
+                                        <button type="button" class="pill" data-size-option data-size="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></button>
+                                    <?php endforeach; ?>
+                                </div>
+                                <select name="size" data-size hidden>
+                                    <option value="">Selecione</option>
+                                    <?php foreach ($sizeOptions as $opt): ?>
+                                        <option value="<?= htmlspecialchars($opt['label']) ?>"><?= htmlspecialchars($opt['label']) ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+
+                            <div class="selector quantity-compact">
+                                <label>Quantidade</label>
+                                <div class="qty-wrapper">
+                                    <button type="button" class="qty-btn" data-qty-dec>−</button>
+                                    <input type="number" name="quantity" min="1" value="1">
+                                    <button type="button" class="qty-btn" data-qty-inc>+</button>
+                                </div>
+                            </div>
+
+                            <div class="selector">
+                                <label>Forma de pagamento</label>
+                                <select name="payment" data-payment>
+                                    <?php foreach ($paymentOptions as $index => $payOpt): ?>
+                                        <option value="<?= htmlspecialchars($payOpt['key']) ?>" data-total="<?= htmlspecialchars($payOpt['total']) ?>" <?= $index === 0 ? 'selected' : '' ?>>
+                                            <?= htmlspecialchars($payOpt['label']) ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="actions-row">
+                            <button type="button" class="add-btn primary" data-add-to-cart>Adicionar ao carrinho</button>
+                            <button type="button" class="add-btn ghost" data-open-cart>Fechar carrinho</button>
+                        </div>
+                    </div>
+
+                    <div class="product-info-block">
+                        <?php if (!empty($product['fabric'])): ?>
+                            <p><strong>Tecido:</strong> <?= htmlspecialchars($product['fabric']) ?></p>
+                        <?php endif; ?>
+                        <?php if (!empty($product['info'])): ?>
+                            <div class="meta-list">
+                                <strong>Informações:</strong>
+                                <ul>
+                                    <?php foreach ($product['info'] as $info): ?>
+                                        <?php foreach (array_filter(array_map('trim', explode('|', $info))) as $piece): ?>
+                                            <?php $clean = ltrim($piece, "* \t"); ?>
+                                            <li><?= htmlspecialchars($clean) ?></li>
+                                        <?php endforeach; ?>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
+                        <?php if (!empty($product['measures'])): ?>
+                            <?php
+                            // agrupa medidas em cards: cada "Tamanho:" inicia um novo grupo
+                            $measureGroups = [];
+                            $current = [];
+                            foreach ($product['measures'] as $measure) {
+                                $lines = array_filter(array_map('trim', explode('|', $measure)));
+                                foreach ($lines as $line) {
+                                    $cleanLine = ltrim($line, "* \t");
+                                    $isSizeLine = stripos($cleanLine, 'Tamanho') === 0
+                                        || preg_match('/^[A-Za-z0-9]{1,4}\s*[-:(]/u', $cleanLine);
+                                    if ($isSizeLine) {
+                                        if (!empty($current)) {
+                                            $measureGroups[] = $current;
+                                            $current = [];
+                                        }
+                                    }
+                                    $current[] = $cleanLine;
+                                }
+                            }
+                            if (!empty($current)) {
+                                $measureGroups[] = $current;
+                            }
+                            ?>
+                            <?php if (!empty($measureGroups)): ?>
+                                <div class="meta-list">
+                                    <strong>Medidas:</strong>
+                                    <div class="measure-cards">
+                                        <?php foreach ($measureGroups as $group): ?>
+                                            <div class="measure-card">
+                                                <ul>
+                                                    <?php foreach ($group as $line): ?>
+                                                        <li><?= htmlspecialchars($line) ?></li>
+                                                    <?php endforeach; ?>
+                                                </ul>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                        <?php if (!empty($paymentNotes)): ?>
+                            <div class="meta-list">
+                                <strong>Informações Gerais:</strong>
+                                <ul>
+                                    <?php foreach ($paymentNotes as $note): ?>
+                                        <?php $cleanNote = ltrim($note, "* \t"); ?>
+                                        <li><?= htmlspecialchars($cleanNote) ?></li>
+                                    <?php endforeach; ?>
+                                </ul>
+                            </div>
+                        <?php endif; ?>
+                    </div>
                     </article>
                 <?php endforeach; ?>
             </div>
