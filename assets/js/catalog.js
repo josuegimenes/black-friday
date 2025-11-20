@@ -86,8 +86,13 @@ function animateToCart(sourceEl, qtyAdded = 1) {
     const mainImg = card?.querySelector('[data-gallery-main] img');
     const origin  = mainImg || sourceEl;
 
-    const startRect  = origin.getBoundingClientRect();
+    let startRect  = origin.getBoundingClientRect();
     const targetRect = cartIcon.getBoundingClientRect();
+
+    // fallback: se por algum motivo a origem estiver sem dimensões, usa o próprio botão
+    if ((!startRect.width && !startRect.height) && sourceEl !== origin) {
+        startRect = sourceEl.getBoundingClientRect();
+    }
 
     // --- FLYER (imagem) ---
     const flyer = mainImg ? mainImg.cloneNode(true) : document.createElement('div');
@@ -129,29 +134,36 @@ function animateToCart(sourceEl, qtyAdded = 1) {
     chip.style.opacity   = '1';
     chip.style.transform = 'translate(-50%, -50%) scale(1)';
 
-    // força reflow para registrar o estado inicial
+    const runAnimation = () => {
+        // estado final do flyer
+        flyer.style.left      = `${endX}px`;
+        flyer.style.top       = `${endY}px`;
+        flyer.style.opacity   = '0';
+        flyer.style.transform = 'translate(-50%, -50%) scale(0.35)';
+
+        // estado final do chip
+        chip.style.left      = `${endX}px`;
+        chip.style.top       = `${endY - 40}px`;
+        chip.style.opacity   = '0';
+        chip.style.transform = 'translate(-50%, -50%) scale(0.7)';
+    };
+
+    // força reflow para registrar o estado inicial e garante o próximo frame para transições
     void flyer.offsetWidth;
-
-    // estado final do flyer
-    flyer.style.left      = `${endX}px`;
-    flyer.style.top       = `${endY}px`;
-    flyer.style.opacity   = '0';
-    flyer.style.transform = 'translate(-50%, -50%) scale(0.35)';
-
-    // estado final do chip
-    chip.style.left      = `${endX}px`;
-    chip.style.top       = `${endY - 40}px`;
-    chip.style.opacity   = '0';
-    chip.style.transform = 'translate(-50%, -50%) scale(0.7)';
+    requestAnimationFrame(runAnimation);
 
     // anima o ícone do carrinho
     cartIcon.classList.add('cart-toggle--bump');
 
-    setTimeout(() => {
+    const teardown = () => {
         flyer.remove();
         chip.remove();
         cartIcon.classList.remove('cart-toggle--bump');
-    }, 450);
+    };
+
+    flyer.addEventListener('transitionend', teardown, { once: true });
+    // fallback para garantir limpeza
+    setTimeout(teardown, 600);
 }
 
 const calcTotals = () => {
@@ -490,36 +502,221 @@ const mountItem = (product, size, color, quantity, thumb = null, payment = {}, c
     return item;
 };
 
+const ensureStage = (mainWrapper) => {
+    let stage = mainWrapper.querySelector('.media-stage');
+    if (!stage) {
+        stage = document.createElement('div');
+        stage.className = 'media-stage';
+        mainWrapper.insertBefore(stage, mainWrapper.firstChild);
+    }
+    return stage;
+};
+
 const setMainMedia = (card, type, src, alt = '') => {
     const mainWrapper = card.querySelector('[data-gallery-main]');
     if (!mainWrapper || !src) return;
+    const stage = ensureStage(mainWrapper);
     mainWrapper.dataset.mediaType = type;
+    stage.innerHTML = '';
+    stage.appendChild(createMediaNode(type, src, alt));
+};
+
+const createMediaNode = (type, src, alt = '') => {
     if (type === 'video') {
-        mainWrapper.innerHTML = `<video playsinline controls autoplay loop muted src="${src}"></video>`;
-    } else {
-        mainWrapper.innerHTML = `<img src="${src}" alt="${alt}">`;
+        const video = document.createElement('video');
+        video.playsInline = true;
+        video.autoplay = true;
+        video.loop = true;
+        video.controls = true;
+        video.src = src;
+        return video;
     }
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = alt;
+    return img;
+};
+
+const slideToThumb = (card, thumb, direction = 0) => {
+    if (!thumb) return;
+    const title = card.querySelector('h3')?.textContent || '';
+    const mainWrapper = card.querySelector('[data-gallery-main]');
+    if (!mainWrapper) return;
+    const stage = ensureStage(mainWrapper);
+
+    const type = thumb.dataset.mediaType || 'image';
+    const src = thumb.dataset.src || thumb.dataset.image;
+    const current = stage.firstElementChild;
+
+    // sem direção = troca direta (primeiro load/rebuild)
+    if (!direction || !current) {
+        stage.innerHTML = '';
+        stage.appendChild(createMediaNode(type, src, title));
+        return;
+    }
+
+    const outgoing = current;
+    const incoming = createMediaNode(type, src, title);
+    incoming.classList.add('slide-anim');
+    outgoing.classList.add('slide-anim');
+
+    const dir = direction > 0 ? 1 : -1;
+    incoming.style.transform = `translateX(${dir * 100}%)`;
+    incoming.style.opacity = '0';
+    outgoing.style.transform = 'translateX(0)';
+    outgoing.style.opacity = '1';
+
+    stage.appendChild(incoming);
+
+    requestAnimationFrame(() => {
+        incoming.style.transform = 'translateX(0)';
+        incoming.style.opacity = '1';
+        outgoing.style.transform = `translateX(${-dir * 100}%)`;
+        outgoing.style.opacity = '0';
+    });
+
+    const handleEnd = () => {
+        incoming.classList.remove('slide-anim');
+        incoming.style.transform = '';
+        incoming.style.opacity = '';
+        stage.innerHTML = '';
+        stage.appendChild(incoming);
+        outgoing.removeEventListener('transitionend', handleEnd);
+    };
+
+    outgoing.addEventListener('transitionend', handleEnd, { once: true });
+    // fallback cleanup
+    setTimeout(handleEnd, 320);
+};
+
+const activateThumb = (card, thumb, direction = 0) => {
+    if (!thumb) return;
+    const thumbs = card.querySelectorAll('[data-gallery-thumb]');
+    thumbs.forEach((btn) => btn.classList.remove('is-active'));
+    thumb.classList.add('is-active');
+    slideToThumb(card, thumb, direction);
+};
+
+const changeThumbByStep = (card, step) => {
+    const thumbs = Array.from(card.querySelectorAll('[data-gallery-thumb]'));
+    if (!thumbs.length) return;
+    const currentIndex = Math.max(0, thumbs.findIndex((t) => t.classList.contains('is-active')));
+    const nextIndex = (currentIndex + step + thumbs.length) % thumbs.length;
+    const direction = step >= 0 ? 1 : -1;
+    activateThumb(card, thumbs[nextIndex], direction);
 };
 
 const initGallery = (card) => {
-    const title = card.querySelector('h3')?.textContent || '';
     const mainWrapper = card.querySelector('[data-gallery-main]');
     const thumbs = card.querySelectorAll('[data-gallery-thumb]');
     if (!mainWrapper || thumbs.length === 0) return;
 
-    thumbs.forEach((thumb) => {
+    thumbs.forEach((thumb, index) => {
         thumb.addEventListener('click', () => {
-            thumbs.forEach((btn) => btn.classList.remove('is-active'));
-            thumb.classList.add('is-active');
-            const type = thumb.dataset.mediaType || 'image';
-            const src = thumb.dataset.src || thumb.dataset.image;
-            setMainMedia(card, type, src, title);
+            const currentIndex = Math.max(0, Array.from(thumbs).findIndex((t) => t.classList.contains('is-active')));
+            const direction = index > currentIndex ? 1 : -1;
+            activateThumb(card, thumb, direction);
         });
     });
 };
 
+const bindGalleryNavigation = (card) => {
+    const mainWrapper = card.querySelector('[data-gallery-main]');
+    if (!mainWrapper) return;
+    if (mainWrapper.dataset.navBound === 'true') return;
+    mainWrapper.dataset.navBound = 'true';
+
+    const isNavButton = (target) => !!(target && target.closest && target.closest('[data-gallery-prev],[data-gallery-next]'));
+
+    let lastNavTs = 0;
+    const maybeNavigate = (step) => {
+        const now = Date.now();
+        if (now - lastNavTs < 180) return; // evita duplo acionamento no mesmo gesto
+        lastNavTs = now;
+        changeThumbByStep(card, step);
+    };
+
+    let startX = 0;
+    let startY = 0;
+    let startTime = 0;
+    let pointerId = null;
+
+    mainWrapper.addEventListener('pointerdown', (event) => {
+        if (isNavButton(event.target)) return;
+        pointerId = event.pointerId;
+        startX = event.clientX;
+        startY = event.clientY;
+        startTime = Date.now();
+        try {
+            mainWrapper.setPointerCapture(pointerId);
+        } catch (err) {
+            // ignore capture errors (non-primary pointers)
+        }
+    });
+
+    const handleMove = (event) => {
+        if (isNavButton(event.target)) return;
+        if (pointerId === null || event.pointerId !== pointerId) return;
+        // prevent the page from hijacking the swipe while the user is dragging horizontally
+        const dx = Math.abs(event.clientX - startX);
+        const dy = Math.abs(event.clientY - startY);
+        if (dx > dy && dx > 10) {
+            event.preventDefault();
+        }
+    };
+
+    mainWrapper.addEventListener('pointermove', handleMove, { passive: false });
+
+    mainWrapper.addEventListener('pointerup', (event) => {
+        if (isNavButton(event.target)) {
+            pointerId = null;
+            return;
+        }
+        if (pointerId !== null && event.pointerId !== pointerId) return;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        const elapsed = Date.now() - startTime;
+        const isHorizontal = Math.abs(dx) > Math.abs(dy);
+        const isSwipe = elapsed < 800 && Math.abs(dx) > 30 && isHorizontal;
+        if (isSwipe) {
+            maybeNavigate(dx < 0 ? 1 : -1);
+        }
+        pointerId = null;
+        try {
+            mainWrapper.releasePointerCapture(event.pointerId);
+        } catch (err) {
+            // ignore
+        }
+    });
+
+    mainWrapper.addEventListener(
+        'wheel',
+        (event) => {
+            if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) {
+                event.preventDefault();
+                maybeNavigate(event.deltaX > 0 ? 1 : -1);
+            }
+        },
+        { passive: false },
+    );
+
+    const prevBtn = card.querySelector('[data-gallery-prev]');
+    const nextBtn = card.querySelector('[data-gallery-next]');
+    prevBtn?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        maybeNavigate(-1);
+    });
+    nextBtn?.addEventListener('click', (event) => {
+        event.stopPropagation();
+        maybeNavigate(1);
+    });
+};
+
 const attachGalleryControls = () => {
-    document.querySelectorAll('[data-product-card]').forEach((card) => initGallery(card));
+    document.querySelectorAll('[data-product-card]').forEach((card) => {
+        initGallery(card);
+        bindGalleryNavigation(card);
+    });
 };
 
 const attachCardEvents = () => {
@@ -566,12 +763,14 @@ const attachCardEvents = () => {
             if (!errorEl) {
                 errorEl = document.createElement('div');
                 errorEl.className = 'field-error';
-                const actionsRow = card.querySelector('.actions-row');
-                if (actionsRow?.parentNode) {
-                    actionsRow.parentNode.insertBefore(errorEl, actionsRow.nextSibling);
-                } else {
-                    card.appendChild(errorEl);
-                }
+            }
+            const actionsRow = card.querySelector('.actions-row');
+            if (actionsRow) {
+                actionsRow.insertAdjacentElement('afterend', errorEl);
+            } else if (addButton?.parentElement) {
+                addButton.parentElement.insertAdjacentElement('afterend', errorEl);
+            } else {
+                card.appendChild(errorEl);
             }
             errorEl.textContent = message;
         };
@@ -623,6 +822,7 @@ const attachCardEvents = () => {
                 setMainMedia(card, firstType, firstSrc, product.name);
             }
             initGallery(card);
+            bindGalleryNavigation(card);
         };
 
         const colorPills = card.querySelectorAll('[data-color-option]');
@@ -669,12 +869,74 @@ const attachCardEvents = () => {
             if (!quantityInput) return;
             const val = Math.max(1, Number(quantityInput.value || 1) - 1);
             quantityInput.value = String(val);
+            applyPaymentToCard();
         });
         qtyIncBtn?.addEventListener('click', () => {
             if (!quantityInput) return;
             const val = Math.max(1, Number(quantityInput.value || 1)) + 1;
             quantityInput.value = String(val);
+            applyPaymentToCard();
         });
+        quantityInput?.addEventListener('change', () => {
+            if (!quantityInput) return;
+            const val = Math.max(1, Number(quantityInput.value || 1));
+            quantityInput.value = String(val);
+            applyPaymentToCard();
+        });
+
+        const applyPaymentToCard = () => {
+            const paymentSelect = card.querySelector('[data-payment]');
+            const priceNowEl = card.querySelector('.price-now');
+            const paymentHint = card.querySelector('.payment-hint');
+            const paymentChip = card.querySelector('.payment-chip');
+            const savingPill = card.querySelector('.saving-pill');
+            const originalPrice = Number(product.original_price ?? product.originalPrice ?? 0);
+            const qty = Math.max(1, Number(quantityInput?.value || 1));
+
+            const sel = paymentSelect?.selectedOptions?.[0];
+            const paymentTotal = sel ? Number(sel.dataset.total || NaN) : null;
+            const paymentLabel = sel?.textContent?.trim() || '';
+            const paymentKey = (sel?.value || sel?.dataset?.key || '').toLowerCase();
+            const saleValue = !Number.isNaN(paymentTotal) && paymentTotal !== null ? paymentTotal : Number(product.sale_price ?? product.salePrice ?? 0);
+
+            const money = (val) =>
+                `R$ ${new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(
+                    Number(val) || 0,
+                )}`;
+
+            if (priceNowEl) {
+                if (paymentKey === '3x') {
+                    priceNowEl.textContent = `3x de ${money(saleValue / 3)}`;
+                } else if (paymentKey === '12x') {
+                    priceNowEl.textContent = `12x de ${money(saleValue / 12)}`;
+                } else {
+                    priceNowEl.textContent = money(saleValue);
+                }
+            }
+
+            if (paymentHint) {
+                paymentHint.textContent = paymentLabel || '';
+            }
+
+            if (paymentChip) {
+                if (paymentKey === '3x') {
+                    paymentChip.textContent = '3x';
+                } else if (paymentKey === '12x') {
+                    paymentChip.textContent = '12x';
+                } else {
+                    paymentChip.textContent = 'no Pix';
+                }
+            }
+
+            if (savingPill) {
+                const economyPerUnit = Math.max(0, (originalPrice || saleValue) - saleValue);
+                const economyTotal = economyPerUnit * qty;
+                savingPill.textContent = `Economize ${currency.format(economyTotal)}`;
+            }
+        };
+
+        applyPaymentToCard();
+        card.querySelector('[data-payment]')?.addEventListener('change', applyPaymentToCard);
 
         // BOTÃO ADICIONAR AO CARRINHO - usando quantidade deste clique (+N no chip)
         addButton?.addEventListener('click', () => {
