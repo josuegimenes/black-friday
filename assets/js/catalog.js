@@ -68,6 +68,40 @@ const getCartIcon = () =>
     document.querySelector('[data-cart-toggle]') ||
     document.querySelector('.cart-toggle');
 
+// ALERT MODAL (custom, para evitar bloqueio de alert nativo em mobile)
+function ensureAlertModal() {
+    let overlay = document.getElementById('alertOverlay');
+    if (overlay) return overlay;
+
+    overlay = document.createElement('div');
+    overlay.id = 'alertOverlay';
+    overlay.className = 'alert-overlay';
+    overlay.innerHTML = `
+        <div class="alert-box">
+            <p class="alert-message"></p>
+            <button type="button" class="alert-close">OK</button>
+        </div>
+    `;
+    document.body.appendChild(overlay);
+
+    const close = () => overlay.classList.remove('is-open');
+    overlay.addEventListener('click', (event) => {
+        if (event.target === overlay) close();
+    });
+    overlay.querySelector('.alert-close')?.addEventListener('click', close);
+
+    return overlay;
+}
+
+function showAlert(message) {
+    const overlay = ensureAlertModal();
+    const msgEl = overlay.querySelector('.alert-message');
+    if (msgEl) {
+        msgEl.textContent = message || '';
+    }
+    overlay.classList.add('is-open');
+}
+
 /**
  * Anima a imagem do produto + um chip de quantidade (+N) até o ícone do carrinho
  * @param {HTMLElement} sourceEl - botão "Adicionar ao carrinho"
@@ -76,94 +110,59 @@ const getCartIcon = () =>
 function animateToCart(sourceEl, qtyAdded = 1) {
     const cartIcon = getCartIcon();
 
-    if (!cartIcon || !sourceEl) {
-        console.warn('[BF_DEBUG] animateToCart: faltando cartIcon ou sourceEl', { cartIcon, sourceEl });
-        return;
-    }
-
     // tenta achar o card e a imagem principal
     const card    = sourceEl.closest('[data-product-card]');
     const mainImg = card?.querySelector('[data-gallery-main] img');
-    const origin  = mainImg || sourceEl;
+    const origin  = sourceEl; // origem da animação é o botão clicado
 
     let startRect  = origin.getBoundingClientRect();
-    const targetRect = cartIcon.getBoundingClientRect();
-
     // fallback: se por algum motivo a origem estiver sem dimensões, usa o próprio botão
     if ((!startRect.width && !startRect.height) && sourceEl !== origin) {
         startRect = sourceEl.getBoundingClientRect();
     }
+    const iconRect = cartIcon ? cartIcon.getBoundingClientRect() : null;
 
-    // --- FLYER (imagem) ---
-    const flyer = mainImg ? mainImg.cloneNode(true) : document.createElement('div');
+    // destino: direção do ícone; se fora da viewport, ainda usamos o centro horizontal e um topo seguro
+    const endX = iconRect ? iconRect.left + iconRect.width / 2 : startRect.left + startRect.width / 2;
+    const endY = Math.max(16, iconRect ? iconRect.top + iconRect.height / 2 : 16);
+
+    // --- FLYER (chip de quantidade) ---
+    const flyer = document.createElement('div');
     flyer.classList.add('cart-flyer');
-
-    // quando não tem imagem, mostramos um quadradinho com o emoji
-    if (!mainImg) {
-        flyer.textContent = '🛒';
-        flyer.style.display = 'flex';
-        flyer.style.alignItems = 'center';
-        flyer.style.justifyContent = 'center';
-        flyer.style.fontSize = '2rem';
-        flyer.style.background = 'rgba(255,255,255,0.98)';
-        flyer.style.borderRadius = '12px';
-    }
-
-    // --- CHIP DE QUANTIDADE (+N) ---
-    const chip = document.createElement('div');
-    chip.classList.add('cart-chip-flyer');
-    chip.textContent = `+${qtyAdded}`;
+    flyer.textContent = `+${qtyAdded}`;
 
     document.body.appendChild(flyer);
-    document.body.appendChild(chip);
 
     // posição inicial (centro da imagem/botão)
     const startX = startRect.left + startRect.width / 2;
     const startY = startRect.top + startRect.height / 2;
-    const endX   = targetRect.left + targetRect.width / 2;
-    const endY   = targetRect.top + targetRect.height / 2;
 
     flyer.style.left      = `${startX}px`;
     flyer.style.top       = `${startY}px`;
     flyer.style.opacity   = '1';
     flyer.style.transform = 'translate(-50%, -50%) scale(1)';
 
-    // chip começa um pouco acima do flyer
-    chip.style.left      = `${startX}px`;
-    chip.style.top       = `${startY - 40}px`;
-    chip.style.opacity   = '1';
-    chip.style.transform = 'translate(-50%, -50%) scale(1)';
-
     const runAnimation = () => {
-        // estado final do flyer
         flyer.style.left      = `${endX}px`;
         flyer.style.top       = `${endY}px`;
-        flyer.style.opacity   = '0';
-        flyer.style.transform = 'translate(-50%, -50%) scale(0.35)';
-
-        // estado final do chip
-        chip.style.left      = `${endX}px`;
-        chip.style.top       = `${endY - 40}px`;
-        chip.style.opacity   = '0';
-        chip.style.transform = 'translate(-50%, -50%) scale(0.7)';
+        flyer.style.transform = 'translate(-50%, -50%) scale(0.6)';
     };
 
     // força reflow para registrar o estado inicial e garante o próximo frame para transições
     void flyer.offsetWidth;
     requestAnimationFrame(runAnimation);
 
-    // anima o ícone do carrinho
-    cartIcon.classList.add('cart-toggle--bump');
+    // anima o ícone do carrinho (se visível)
+    cartIcon?.classList.add('cart-toggle--bump');
 
     const teardown = () => {
         flyer.remove();
-        chip.remove();
-        cartIcon.classList.remove('cart-toggle--bump');
+        cartIcon?.classList.remove('cart-toggle--bump');
     };
 
     flyer.addEventListener('transitionend', teardown, { once: true });
-    // fallback para garantir limpeza
-    setTimeout(teardown, 600);
+    // fallback para garantir limpeza (sincronizado com duração mais longa)
+    setTimeout(teardown, 2600);
 }
 
 const calcTotals = () => {
@@ -754,25 +753,13 @@ const attachCardEvents = () => {
             });
         };
 
+        // validação com modal custom (evita bloqueio de alert nativo)
         const clearErrors = () => {
             card.querySelectorAll('.field-error').forEach((el) => el.remove());
         };
 
         const showError = (message) => {
-            let errorEl = card.querySelector('.field-error');
-            if (!errorEl) {
-                errorEl = document.createElement('div');
-                errorEl.className = 'field-error';
-            }
-            const actionsRow = card.querySelector('.actions-row');
-            if (actionsRow) {
-                actionsRow.insertAdjacentElement('afterend', errorEl);
-            } else if (addButton?.parentElement) {
-                addButton.parentElement.insertAdjacentElement('afterend', errorEl);
-            } else {
-                card.appendChild(errorEl);
-            }
-            errorEl.textContent = message;
+            showAlert(message);
         };
 
         const rebuildThumbs = (colorSlug) => {
