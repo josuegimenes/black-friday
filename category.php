@@ -849,7 +849,7 @@ $otherCategories = array_filter(
             <div class="cart-items"></div>
 
             <div class="cart-sidebar__actions">
-                <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar acesso</button>
+                <button id="triggerCheckout" class="primary-action">Fechar carrinho e reservar desconto</button>
             </div>
         </aside>
     </div>

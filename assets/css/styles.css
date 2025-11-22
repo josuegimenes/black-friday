@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Agbalumo&family=Figtree:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Agbalumo&family=Figtree:wght@400;700;900&family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap');
 
 :root {
     --space: 'Space Grotesk', 'Inter', sans-serif;
@@ -131,13 +131,14 @@ header .headline {
 }
 
 .hero {
-    /* topo bem mais próximo – você pode ir testando 16, 8 ou 0 */
+    /* topo bem mais próximo - você pode ir testando 16, 8 ou 0 */
     padding: 0px clamp(24px, 7vw, 96px) 72px;
     display: flex;
     flex-direction: column;
     gap: 16px;
     align-items: center;
     text-align: center;
+    position: relative;
 }
 
 .logo-stage {
@@ -146,8 +147,8 @@ header .headline {
     align-items: center;
     gap: 8px;
     margin-top: -40px;
-    /* comece com -40px e ajuste no olho: -20, -30, -50... */
-    margin-bottom: -10px;
+    /* puxa a logo para perto do ticker; ajuste fino no olho */
+    margin-bottom: -30px;
 }
 
 .logo-glow {
@@ -228,29 +229,144 @@ header .headline {
     border: 2px solid #ff2e83;
     border-radius: 999px;
     padding: 22px clamp(40px, 6vw, 72px);
-    width: min(680px, 90vw);
+    width: fit-content;
+    max-width: 95vw;
     background: rgba(5, 5, 5, 0.9);
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-    margin-top: -40px;
+    margin-top: -30px;
+    margin-left: auto;
+    margin-right: auto;
+    color: #f5f5f7;
+    text-align: center;
+    line-height: 1.35;
 }
 
 .hero-pill .pill-headline {
     font-family: var(--headline-pill);
-    font-size: 2.25rem;
+    font-size: 3rem;
     /* 36px */
     margin: 0;
+    white-space: normal;
+    line-height: 1.2;
 }
 
 .hero-pill strong {
     color: var(--neon-yellow);
 }
 
+.pill-headline .pill-highlight {
+    color: var(--neon-yellow);
+}
+
+.pill-subline .pill-highlight-80 {
+    color: var(--neon-yellow);
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 10px rgba(253, 223, 74, 0.35);
+}
+
+.pill-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin-left: 8px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    letter-spacing: 0.5px;
+    color: #f5f5f7;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.pill-chip.urgency::before {
+    content: '⏳';
+    font-size: 0.9rem;
+}
+
+@media (max-width: 900px) {
+    .hero-pill {
+        padding: 18px clamp(28px, 6vw, 54px);
+        border-width: 1.5px;
+        border-radius: 28px;
+    }
+
+    .hero-pill .pill-headline {
+        font-size: 2.2rem;
+        line-height: 1.15;
+    }
+
+    .hero-pill .pill-subline {
+        font-size: 1rem !important;
+        line-height: 1.35;
+    }
+}
+
+@media (max-width: 720px) {
+    .logo-type {
+        width: min(1050px, 110vw);
+    }
+
+    .logo-stage {
+        margin-top: -30px;
+        margin-bottom: -20px;
+    }
+
+    .hero-pill {
+        padding: 16px clamp(18px, 5vw, 36px);
+        width: 100%;
+        max-width: 100%;
+        border-radius: 22px;
+        margin-top: -10px;
+    }
+
+    .hero-pill .pill-headline {
+        font-size: 2rem;
+        line-height: 1.15;
+    }
+
+    .hero-pill .pill-subline {
+        font-size: 1.05rem !important;
+        line-height: 1.38;
+    }
+
+    .hero-note {
+        font-size: 0.95rem;
+        line-height: 1.45;
+    }
+}
+
+@media (max-width: 520px) {
+    .logo-type {
+        width: min(820px, 110vw);
+    }
+
+    .logo-stage {
+        margin-top: -24px;
+        margin-bottom: -14px;
+    }
+
+    .hero-pill .pill-headline {
+        font-size: 1.7rem;
+        line-height: 1.14;
+    }
+
+    .hero-pill .pill-subline {
+        font-size: 1rem !important;
+        line-height: 1.36;
+    }
+
+    .hero-note {
+        font-size: 0.92rem;
+        line-height: 1.42;
+    }
+}
 .hero-pill .pill-subline {
     margin: 8px 0 0;
     color: #ff4b94;
     font-family: var(--figtree);
     font-weight: 700;
-    font-size: 0.875rem;
+    font-size: 1.4rem;
     /* 14px */
 }
 
@@ -284,6 +400,60 @@ header .headline {
     text-transform: uppercase;
     letter-spacing: 2px;
     color: #3b3b3b;
+}
+
+.ticker-wrap {
+    text-align: center;
+    margin: 0 auto 8px;
+    max-width: 760px;
+}
+
+/* Hero ticker refinado: menor, centrado e mais sutil */
+.hero .countdown.ticker {
+    grid-template-columns: repeat(4, minmax(52px, 78px));
+    gap: 8px;
+    width: min(320px, 100%);
+    margin: 0 auto;
+}
+
+.hero .ticker .brick {
+    padding: 10px 8px;
+    border-radius: 14px;
+    background: transparent;
+    border: 1.5px solid #ff4b94;
+    box-shadow: 0 0 12px rgba(255, 79, 222, 0.35);
+    color: #fff;
+}
+
+.hero .ticker .value {
+    font-size: clamp(1.2rem, 3vw, 1.6rem);
+    color: #fff;
+}
+
+.hero .ticker .label {
+    font-size: 0.62rem;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.82);
+}
+
+.ticker-kicker {
+    margin: 0px 0px 10px 0px;
+    font-family: var(--space);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 800;
+    color: var(--neon-yellow);
+    font-size: 0.95rem;
+    border-top: 2px solid #000;
+    display: inline-block;
+    padding-top: 4px;
+}
+
+.ticker-note {
+    margin: 6px 0 12px;
+    color: rgba(245, 245, 247, 0.9);
+    font-size: 0.95rem;
+    font-weight: 600;
 }
 
 .hero-note {
@@ -320,6 +490,30 @@ header .headline {
 .cta-primary:hover {
     transform: translateY(-2px);
     box-shadow: 0 24px 60px rgba(255, 0, 127, 0.6);
+}
+
+@media (max-width: 900px) {
+    .cta-primary {
+        font-size: 1.1rem !important;
+        padding: 16px 52px !important;
+        letter-spacing: 1.5px !important;
+    }
+}
+
+@media (max-width: 720px) {
+    .cta-primary {
+        font-size: 1rem !important;
+        padding: 15px 46px !important;
+        letter-spacing: 1.2px !important;
+    }
+}
+
+@media (max-width: 520px) {
+    .cta-primary {
+        font-size: 0.95rem !important;
+        padding: 14px 40px !important;
+        letter-spacing: 1px !important;
+    }
 }
 
 .category-body {
@@ -1708,12 +1902,13 @@ header .headline {
 
 .add-btn {
     margin-top: 8px;
-    padding: 14px;
+    padding: 13px;
     border-radius: 16px;
     border: 1px solid transparent;
     font-family: var(--space);
     text-transform: uppercase;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
+    font-size: 0.98rem;
     cursor: pointer;
     background: transparent;
     color: #fff;
@@ -2098,11 +2293,11 @@ header .headline {
     display: flex;
     align-items: center;
     gap: 10px;
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.82);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     border-radius: 14px;
-    padding: 10px 14px;
-    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    padding: 12px 16px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
     pointer-events: auto;
     margin-top: 8px;
     position: relative;
@@ -2176,6 +2371,33 @@ header .headline {
     to {
         opacity: 0;
         transform: translateY(12px);
+    }
+}
+
+@media (max-width: 640px) {
+    .live-activity {
+        left: 16px;
+        bottom: 16px;
+    }
+
+    .live-activity__chip {
+        padding: 14px 18px;
+        gap: 12px;
+        border-radius: 16px;
+    }
+
+    .live-activity__avatar {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+    }
+
+    .live-activity__info strong {
+        font-size: 1rem;
+    }
+
+    .live-activity__info span {
+        font-size: 0.9rem;
     }
 }
 
@@ -2500,3 +2722,4 @@ footer {
     flex-direction: column;
     gap: 4px;
 }
+

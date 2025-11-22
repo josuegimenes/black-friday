@@ -1,7 +1,7 @@
 ﻿const countdownBlocks = document.querySelectorAll('[data-countdown]');
 
 if (countdownBlocks.length) {
-    const releaseDate = new Date('2025-11-28T00:00:00-03:00');
+    const releaseDate = new Date('2025-11-30T00:00:00-03:00');
 
     const pad = (value) => String(value).padStart(2, '0');
 
