@@ -18,6 +18,7 @@ $flash = $_SESSION['order_flash'] ?? null;
 if ($flash) {
     unset($_SESSION['order_flash']);
 }
+$adminUser = $_SESSION['admin_user'] ?? null;
 
 $statuses = [
     'Novo',
@@ -77,6 +78,63 @@ function recalc_totals(array $items): array
         'totalValue' => $totalValue,
         'totalSavings' => $totalSavings,
     ];
+}
+
+function persist_items(PDO $pdo, int $leadId, array $items, array $totals): bool
+{
+    // Atualiza snapshot JSON
+    $payload = json_encode(['items' => array_values($items), 'totals' => $totals], JSON_UNESCAPED_UNICODE);
+
+    // Atualiza tabela principal
+    $upd = $pdo->prepare('UPDATE bf_leads SET products = :p, total_items = :ti, total_value = :tv, total_savings = :ts WHERE id = :id');
+    $okLead = $upd->execute([
+        ':p' => $payload,
+        ':ti' => $totals['totalItems'],
+        ':tv' => $totals['totalValue'],
+        ':ts' => $totals['totalSavings'],
+        ':id' => $leadId,
+    ]);
+
+    // Regrava tabela bf_lead_items para manter consistência
+    $pdo->prepare('DELETE FROM bf_lead_items WHERE lead_id = :id')->execute([':id' => $leadId]);
+    $ins = $pdo->prepare('INSERT INTO bf_lead_items (lead_id, product_id, name, color, size, quantity, sale_price, original_price, image, admin_note) VALUES (:lead_id, :product_id, :name, :color, :size, :qty, :sale, :orig, :img, :note)');
+    foreach ($items as $it) {
+        $ins->execute([
+            ':lead_id' => $leadId,
+            ':product_id' => $it['productId'] ?? null,
+            ':name' => $it['name'] ?? 'Produto',
+            ':color' => $it['color'] ?? '',
+            ':size' => $it['size'] ?? '',
+            ':qty' => (int)($it['quantity'] ?? 0),
+            ':sale' => (float)($it['salePrice'] ?? 0),
+            ':orig' => isset($it['originalPrice']) ? (float)$it['originalPrice'] : null,
+            ':img' => $it['thumb'] ?? null,
+            ':note' => $it['adminNote'] ?? null,
+        ]);
+    }
+
+    return $okLead;
+}
+
+function log_lead_action(PDO $pdo, int $leadId, string $action, ?int $itemIndex, string $note, array $before = null, array $after = null, ?string $adminUser = null): void
+{
+    try {
+        $stmt = $pdo->prepare("
+            INSERT INTO bf_leads_log (lead_id, action, item_index, note, before_snapshot, after_snapshot, admin_user)
+            VALUES (:lead_id, :action, :item_index, :note, :before_snapshot, :after_snapshot, :admin_user)
+        ");
+        $stmt->execute([
+            ':lead_id' => $leadId,
+            ':action' => $action,
+            ':item_index' => $itemIndex,
+            ':note' => $note !== '' ? $note : null,
+            ':before_snapshot' => $before ? json_encode($before, JSON_UNESCAPED_UNICODE) : null,
+            ':after_snapshot' => $after ? json_encode($after, JSON_UNESCAPED_UNICODE) : null,
+            ':admin_user' => $adminUser,
+        ]);
+    } catch (Throwable $e) {
+        // Falha em log não interrompe o fluxo principal
+    }
 }
 
 function fetch_items_from_db(PDO $pdo, int $leadId): array
@@ -143,6 +201,39 @@ function build_catalog_from_mock(): array
 }
 
 $catalogProducts = build_catalog_from_mock();
+// Helper para ajustar thumb ao trocar produto/cor
+function adjust_thumb(?string $thumb, ?string $productId, ?string $color): ?string
+{
+    if (!$thumb) return $thumb;
+
+    $parsed = parse_url($thumb);
+    $prefix = '';
+    if (!empty($parsed['scheme']) && !empty($parsed['host'])) {
+        $prefix = $parsed['scheme'] . '://' . $parsed['host'];
+    }
+
+    $productDir = trim(str_replace(['-', '%20'], ' ', strtolower($productId ?? '')));
+    $colorDir = trim(str_replace(['-', '%20'], ' ', strtolower($color ?? '')));
+    if ($productDir === '' || $colorDir === '') return $thumb;
+
+    $filename = pathinfo($parsed['path'] ?? 'principal.png', PATHINFO_FILENAME);
+    if ($filename === '') $filename = 'principal';
+
+    $candidates = ['png', 'jpg', 'jpeg', 'webp'];
+    $baseFs = realpath(__DIR__ . '/../assets/img/saias');
+    if ($baseFs === false) return $thumb;
+
+    foreach ($candidates as $ext) {
+        $testRel = '/saias/' . rawurlencode($productDir) . '/' . rawurlencode($colorDir) . '/' . $filename . '.' . $ext;
+        $fsPath = $baseFs . DIRECTORY_SEPARATOR . str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $productDir . '/' . $colorDir . '/' . $filename . '.' . $ext);
+        $fsPath = rawurldecode($fsPath);
+        if (is_file($fsPath)) {
+            return $prefix . '/assets/img' . $testRel;
+        }
+    }
+
+    return $thumb;
+}
 
 $id = (int)($_GET['id'] ?? 0);
 if ($id <= 0) {
@@ -194,33 +285,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $note = trim($_POST['note'] ?? '');
         if (!isset($items[$idx])) {
             $messageType = 'error';
-            $message = 'Item não encontrado para remoção.';
+            $message = 'Item n�o encontrado para remo��o.';
         } else {
+            $before = $items;
             array_splice($items, $idx, 1);
             $totals = recalc_totals($items);
-            $payload = json_encode(['items' => array_values($items), 'totals' => $totals], JSON_UNESCAPED_UNICODE);
-            $ok = $pdo->prepare('UPDATE bf_leads SET products = :p, total_items = :ti, total_value = :tv, total_savings = :ts WHERE id = :id')
-                ->execute([
-                    ':p' => $payload,
-                    ':ti' => $totals['totalItems'],
-                    ':tv' => $totals['totalValue'],
-                    ':ts' => $totals['totalSavings'],
-                    ':id' => $id,
-                ]);
+            $ok = persist_items($pdo, $id, $items, $totals);
             if ($ok) {
                 $messageType = 'success';
                 $message = 'Item removido e totais atualizados.';
+                log_lead_action($pdo, $id, 'remove_item', $idx, $note, $before, $items, $adminUser);
             } else {
                 $messageType = 'error';
-                $message = 'Não foi possível remover o item.';
+                $message = 'N�o foi poss�vel remover o item.';
             }
         }
     } elseif ($action === 'edit_item') {
         $idx = (int)($_POST['item_index'] ?? -1);
         if (!isset($items[$idx])) {
             $messageType = 'error';
-            $message = 'Item não encontrado para edição.';
+            $message = 'Item n�o encontrado para edi��o.';
         } else {
+            $before = $items;
             $pid = strtolower(trim($_POST['product_id'] ?? ''));
             $color = trim($_POST['color'] ?? '');
             $size = trim($_POST['size'] ?? '');
@@ -241,26 +327,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($orig !== null) {
                 $items[$idx]['originalPrice'] = $orig;
             }
+            // Ajusta a imagem se o produto/cor mudar
+            $items[$idx]['thumb'] = adjust_thumb($items[$idx]['thumb'] ?? ($items[$idx]['image'] ?? null), $pid, $color);
             if ($note !== '') {
                 $items[$idx]['adminNote'] = $note;
             }
 
             $totals = recalc_totals($items);
-            $payload = json_encode(['items' => array_values($items), 'totals' => $totals], JSON_UNESCAPED_UNICODE);
-            $ok = $pdo->prepare('UPDATE bf_leads SET products = :p, total_items = :ti, total_value = :tv, total_savings = :ts WHERE id = :id')
-                ->execute([
-                    ':p' => $payload,
-                    ':ti' => $totals['totalItems'],
-                    ':tv' => $totals['totalValue'],
-                    ':ts' => $totals['totalSavings'],
-                    ':id' => $id,
-                ]);
+            $ok = persist_items($pdo, $id, $items, $totals);
             if ($ok) {
                 $messageType = 'success';
                 $message = 'Item atualizado.';
+                log_lead_action($pdo, $id, 'edit_item', $idx, $note, $before, $items, $adminUser);
             } else {
                 $messageType = 'error';
-                $message = 'Não foi possível atualizar o item.';
+                $message = 'N�o foi poss�vel atualizar o item.';
             }
         }
     }
@@ -388,7 +469,10 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
                                 <div>
                                     <div class="title"><?= safe(mb_strtoupper($name, 'UTF-8')) ?></div>
                                     <div class="meta">
-                                        <div class="row"><span>Tamanho: <?= safe($size) ?></span><span>Cor: <?= safe($color) ?></span><span>Quantidade: <?= $qty ?> un</span></div>
+                                        <div class="row"><span>Tamanho: <?= safe($size) ?></span></div>
+                                        <div class="row"><span>Cor: <?= safe($color) ?></span></div>
+                                        <div class="row"><span>Quantidade: <?= $qty ?> un</span></div>
+                                        <div class="row"><span>Preço original: <?= money($orig !== null ? $orig : $sale) ?></span></div>
                                         <div class="row"><span>Preço unitário: <?= money($sale) ?></span></div>
                                     </div>
                                 </div>
@@ -584,3 +668,6 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
 })();
 </script>
 </html>
+
+
+
