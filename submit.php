@@ -146,6 +146,25 @@ function create_mailer(array $config): PHPMailer
     return $mailer;
 }
 
+function persist_lead_items(PDO $pdo, int $leadId, array $items): void
+{
+    $pdo->prepare('DELETE FROM bf_lead_items WHERE lead_id = :id')->execute([':id' => $leadId]);
+    $ins = $pdo->prepare('INSERT INTO bf_lead_items (lead_id, product_id, name, color, size, quantity, sale_price, original_price, image) VALUES (:lead_id, :product_id, :name, :color, :size, :qty, :sale, :orig, :img)');
+    foreach ($items as $it) {
+        $ins->execute([
+            ':lead_id' => $leadId,
+            ':product_id' => $it['id'] ?? ($it['productId'] ?? null),
+            ':name' => $it['name'] ?? 'Produto',
+            ':color' => $it['color'] ?? ($it['colorLabel'] ?? null),
+            ':size' => $it['size'] ?? null,
+            ':qty' => (int)($it['quantity'] ?? 0),
+            ':sale' => (float)($it['salePrice'] ?? 0),
+            ':orig' => isset($it['originalPrice']) ? (float)$it['originalPrice'] : null,
+            ':img' => $it['thumb'] ?? ($it['image'] ?? null),
+        ]);
+    }
+}
+
 function format_color_label(string $value): string
 {
     $clean = str_replace(['-', '_'], ' ', $value);
@@ -320,6 +339,7 @@ try {
             ':total_savings' => $totalSavings,
             ':id' => $existingLead['id'],
         ]);
+        persist_lead_items($pdo, (int)$existingLead['id'], $cartData['items']);
     } else {
         $stmt = $pdo->prepare('INSERT INTO bf_leads (full_name, email, whatsapp, products, total_items, total_value, total_savings, status) VALUES (:name, :email, :whatsapp, :products, :total_items, :total_value, :total_savings, :status)');
         $stmt->execute([
@@ -332,6 +352,8 @@ try {
             ':total_savings' => $totalSavings,
             ':status' => 'Novo',
         ]);
+        $leadId = (int)$pdo->lastInsertId();
+        persist_lead_items($pdo, $leadId, $cartData['items']);
     }
 } catch (Throwable $exception) {
     error_log('Erro ao salvar lead: ' . $exception->getMessage());
