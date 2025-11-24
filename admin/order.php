@@ -195,6 +195,9 @@ function build_catalog_from_mock(): array
             'name' => $name,
             'colors' => array_values(array_unique($prod['colors'] ?? [])),
             'sizes' => array_values(array_unique($prod['sizes'] ?? [])),
+            'sale_price' => $prod['sale_price'] ?? null,
+            'original_price' => $prod['original_price'] ?? null,
+            'thumb' => $prod['thumb'] ?? null,
         ];
     }
     return $catalog;
@@ -360,6 +363,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $message = 'N�o foi poss�vel atualizar o item.';
             }
         }
+    } elseif ($action === 'add_item') {
+        $pid = strtolower(trim($_POST['product_id'] ?? ''));
+        $color = trim($_POST['color'] ?? '');
+        $size = trim($_POST['size'] ?? '');
+        $qty = max(1, (int)($_POST['quantity'] ?? 1));
+        $sale = max(0, (float)($_POST['sale_price'] ?? 0));
+        $orig = ($_POST['original_price'] ?? '') !== '' ? (float)$_POST['original_price'] : null;
+        $note = trim($_POST['note'] ?? '');
+
+        $catalogItem = $catalogProducts[$pid] ?? null;
+        $name = $catalogItem['name'] ?? 'Produto';
+
+        $norm = static function($val) { return strtolower(trim((string)$val)); };
+        $newCombo = $norm($pid) . '|' . $norm($color) . '|' . $norm($size);
+        foreach ($items as $ex) {
+            $combo = $norm($ex['productId'] ?? '') . '|' . $norm($ex['color'] ?? '') . '|' . $norm($ex['size'] ?? '');
+            if ($combo === $newCombo) {
+                $_SESSION['order_flash'] = [
+                    'type' => 'error',
+                    'msg' => 'Esta combinação de produto/cor/tamanho já existe. Edite o item correspondente ou remova o duplicado.'
+                ];
+                header('Location: order.php?id=' . $id);
+                exit;
+            }
+        }
+
+        $thumb = $catalogItem['thumb'] ?? ($items[0]['thumb'] ?? null);
+        $thumb = adjust_thumb($thumb, $pid, $color);
+
+        $items[] = [
+            'productId' => $pid,
+            'name' => $name,
+            'color' => $color,
+            'size' => $size,
+            'quantity' => $qty,
+            'salePrice' => $sale,
+            'originalPrice' => $orig,
+            'thumb' => $thumb,
+            'adminNote' => $note !== '' ? $note : null,
+        ];
+
+        $totals = recalc_totals($items);
+        $ok = persist_items($pdo, $id, $items, $totals);
+        if ($ok) {
+            $messageType = 'success';
+            $message = 'Item adicionado com sucesso.';
+            log_lead_action($pdo, $id, 'add_item', count($items) - 1, $note, null, $items, $adminUser);
+        } else {
+            $messageType = 'error';
+            $message = 'N�o foi poss�vel adicionar o item.';
+        }
     }
 
     $_SESSION['order_flash'] = ['type' => $messageType, 'msg' => $message];
@@ -462,7 +516,10 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
             </div>
 
             <div class="card pad">
-                <h2 class="section-title">Resumo do carrinho</h2>
+                <div class="section-head">
+                    <h2 class="section-title">Resumo do carrinho</h2>
+                    <button type="button" class="icon-btn" data-open-modal="add-item" title="Adicionar item">➕</button>
+                </div>
 
                 <?php if (!$items): ?>
                     <div class="empty-state">Nenhum item registrado.</div>
@@ -595,6 +652,54 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
         </div>
     </div>
 
+    <!-- Modal adicionar -->
+    <div class="modal-backdrop is-hidden" data-modal="add-item">
+        <div class="modal-card">
+            <button type="button" class="modal-close" data-close-modal>×</button>
+            <h3>Adicionar item</h3>
+            <p class="muted">Escolha o produto e personalize os campos.</p>
+            <form method="POST" class="modal-form" onsubmit="this.querySelector('button[type=submit]').disabled=true;">
+                <input type="hidden" name="action" value="add_item">
+                <div class="grid-edit">
+                    <label class="full-row">Produto
+                        <select name="product_id" data-product-add>
+                            <option value="">Selecione</option>
+                            <?php foreach ($catalogProducts as $pid => $p): ?>
+                                <option value="<?= safe($pid) ?>"><?= safe($p['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </label>
+                    <label>Cor
+                        <select name="color" data-color-add>
+                            <option value="">Selecione</option>
+                        </select>
+                    </label>
+                    <label>Tamanho
+                        <select name="size" data-size-add>
+                            <option value="">Selecione</option>
+                        </select>
+                    </label>
+                    <label class="is-qty">Qtd
+                        <input type="number" name="quantity" min="1" value="1" inputmode="numeric">
+                    </label>
+                    <label>Preço promocional
+                        <input type="text" name="sale_price" inputmode="decimal" data-money data-sale-add>
+                    </label>
+                    <label>Preço original
+                        <input type="text" name="original_price" inputmode="decimal" data-money data-orig-add>
+                    </label>
+                </div>
+                <label>Obs. para o cliente
+                    <input type="text" name="note" maxlength="180">
+                </label>
+                <div class="modal-actions">
+                    <button type="button" class="btn-ghost" data-close-modal>Cancelar</button>
+                    <button type="submit" class="btn-primary">Adicionar item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 </body>
 
 <script>
@@ -657,11 +762,18 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
     const moneyInputs = document.querySelectorAll('[data-money]');
     const formatMoney = (el) => {
         let digits = (el.value || '').replace(/\D+/g, '');
-        if (!digits) { el.value = ''; return; }
-        if (digits.length === 1) digits = '0' + digits;
+        if (!digits) {
+            el.value = '';
+            return;
+        }
+        // garante ao menos 3 dígitos para formar reais e centavos
+        if (digits.length < 3) {
+            digits = digits.padStart(3, '0');
+        }
         const cents = digits.slice(-2);
-        let intPart = digits.slice(0, -2) || '0';
+        let intPart = digits.slice(0, -2);
         intPart = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        if (intPart === '') intPart = '0';
         el.value = `${intPart},${cents}`;
     };
     moneyInputs.forEach(el => {
@@ -671,6 +783,68 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
         }
         el.addEventListener('input', () => formatMoney(el));
     });
+
+    // Add item modal: popula cores/tamanhos/preços
+    const addProduct = document.querySelector('[data-product-add]');
+    const addColor = document.querySelector('[data-color-add]');
+    const addSize = document.querySelector('[data-size-add]');
+    const addSale = document.querySelector('[data-sale-add]');
+    const addOrig = document.querySelector('[data-orig-add]');
+
+    function formatMoneyString(val) {
+        const num = parseFloat(val);
+        if (isNaN(num)) return '';
+        return num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function populateAdd(productId) {
+        const item = catalog.find(p => (p.id || '').toLowerCase() === (productId || '').toLowerCase());
+        const colors = item && Array.isArray(item.colors) ? item.colors : [];
+        const sizes = item && Array.isArray(item.sizes) ? item.sizes : [];
+        if (addColor) {
+            addColor.innerHTML = '<option value=\"\">Selecione</option>';
+            colors.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.textContent = c;
+                addColor.appendChild(opt);
+            });
+            if (colors.length) addColor.value = colors[0];
+        }
+        if (addSize) {
+            addSize.innerHTML = '<option value=\"\">Selecione</option>';
+            sizes.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = s;
+                addSize.appendChild(opt);
+            });
+            if (sizes.length) addSize.value = sizes[0];
+        }
+        if (item) {
+            const sale = item.sale_price ?? item.salePrice ?? '';
+            const orig = item.original_price ?? item.originalPrice ?? '';
+            if (addSale && sale !== '') {
+                addSale.value = formatMoneyString(sale);
+            }
+            if (addOrig) {
+                if (orig !== '') {
+                    addOrig.value = formatMoneyString(orig);
+                } else {
+                    addOrig.value = '';
+                }
+            }
+        } else {
+            if (addSale) addSale.value = '';
+            if (addOrig) addOrig.value = '';
+        }
+    }
+
+    if (addProduct) {
+        addProduct.addEventListener('change', () => {
+            populateAdd(addProduct.value);
+        });
+    }
 
     document.querySelectorAll('.modal-form').forEach(form => {
         form.addEventListener('submit', () => {
