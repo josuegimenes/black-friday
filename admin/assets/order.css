@@ -20,8 +20,8 @@
 
 .order-head {
     display: grid;
-    grid-template-columns: repeat(4, minmax(180px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
 }
 
 .order-head .cell strong {
@@ -55,9 +55,9 @@
 
 .kpis {
     display: grid;
-    grid-template-columns: repeat(4, minmax(160px, 1fr));
-    gap: 14px;
-    margin-top: 16px;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
 }
 
 .kpi {
@@ -103,23 +103,25 @@
     background: #0a0a10;
     border: 1px solid rgba(255,255,255,.08);
     border-radius: 18px;
-    padding: 16px 20px;
-    grid-column: 1 / span 3;    /* largura de 3 cards */
+    padding: 14px 16px;
+    grid-column: 1 / -1;    /* ocupa a linha toda para acomodar mais KPIs */
+    margin-top: 10px;
 }
 
 .status-row {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1.4fr auto auto;
     align-items: center;   /* todos alinhados verticalmente */
-    gap: 14px;
-    flex-wrap: nowrap;
+    gap: 12px;
 }
 
 .status-form {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-end;   /* botão acompanha a base do select */
-    gap: 14px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: flex-end;   /* botao acompanha a base do select */
     flex: 1;
+    width: 100%;
 }
 
 /* Botão SALVAR STATUS com mesma altura do select */
@@ -551,4 +553,3 @@
 .grid-edit label.full-row {
     grid-column: 1 / -1;
 }
-
