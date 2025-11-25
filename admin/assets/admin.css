@@ -91,6 +91,8 @@ label {
 input[type="text"],
 input[type="password"],
 input[type="search"],
+input[type="number"],
+input[type="date"],
 select {
     width: 100%;
     padding: 12px 14px;
@@ -102,6 +104,21 @@ select {
 
 select {
     appearance: none;
+}
+
+/* Ajuste do �cone nativo do date para combinar com o tema */
+input[type="date"] {
+    color-scheme: dark;
+    padding-right: 14px;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(1) brightness(1.25);
+    opacity: 1;
+    cursor: pointer;
+}
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button {
+    display: none;
 }
 
 button,
@@ -194,7 +211,9 @@ header.dashboard-top {
 }
 
 .filters input[type="search"],
-.filters select {
+.filters select,
+.filters input[type="number"],
+.filters input[type="date"] {
     width: 100%;
 }
 
@@ -226,6 +245,44 @@ header.dashboard-top {
 table {
     width: 100%;
     border-collapse: collapse;
+}
+
+.log-detail {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 12px;
+    padding: 10px 0;
+}
+
+.log-detail pre {
+    max-height: 260px;
+    overflow: auto;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 8px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+}
+
+.pagination {
+    margin-top: 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.page-link {
+    padding: 6px 10px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: #fff;
+    text-decoration: none;
+}
+
+.page-link.is-active {
+    background: linear-gradient(135deg, rgba(255,79,222,0.3), rgba(63,250,250,0.25));
+    border-color: rgba(255,255,255,0.35);
 }
 
 thead {

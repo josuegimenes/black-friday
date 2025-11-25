@@ -211,6 +211,7 @@ function status_chip_class(string $status): string
         </h1>
     </div>
     <div class="nav-actions">
+        <a class="btn btn-secondary" href="logs.php">Histórico</a>
         <a class="btn btn-secondary" href="logout.php">Sair</a>
     </div>
 </header>
