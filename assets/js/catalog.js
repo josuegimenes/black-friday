@@ -1,4 +1,4 @@
-﻿const currency = new Intl.NumberFormat('pt-BR', {
+const currency = new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',
 });
@@ -53,6 +53,97 @@ let existingLeadCheckedEmail = '';
 let mergeChoice = null;
 let pendingSubmit = null;
 let skipNextSubmitValidation = false;
+
+const getCartIcon = () =>
+    document.getElementById('cartToggle') ||
+    document.querySelector('[data-cart-toggle]') ||
+    document.querySelector('.cart-toggle');
+
+/**
+ * Anima a imagem do produto + um chip de quantidade (+N) até o ícone do carrinho
+ * @param {HTMLElement} sourceEl - botão "Adicionar ao carrinho"
+ * @param {number} qtyAdded - quantidade adicionada neste clique
+ */
+function animateToCart(sourceEl, qtyAdded = 1) {
+    const cartIcon = getCartIcon();
+
+    if (!cartIcon || !sourceEl) {
+        console.warn('[BF_DEBUG] animateToCart: faltando cartIcon ou sourceEl', { cartIcon, sourceEl });
+        return;
+    }
+
+    // tenta achar o card e a imagem principal
+    const card    = sourceEl.closest('[data-product-card]');
+    const mainImg = card?.querySelector('[data-gallery-main] img');
+    const origin  = mainImg || sourceEl;
+
+    const startRect  = origin.getBoundingClientRect();
+    const targetRect = cartIcon.getBoundingClientRect();
+
+    // --- FLYER (imagem) ---
+    const flyer = mainImg ? mainImg.cloneNode(true) : document.createElement('div');
+    flyer.classList.add('cart-flyer');
+
+    // quando não tem imagem, mostramos um quadradinho com o emoji
+    if (!mainImg) {
+        flyer.textContent = '🛒';
+        flyer.style.display = 'flex';
+        flyer.style.alignItems = 'center';
+        flyer.style.justifyContent = 'center';
+        flyer.style.fontSize = '2rem';
+        flyer.style.background = 'rgba(255,255,255,0.98)';
+        flyer.style.borderRadius = '12px';
+    }
+
+    // --- CHIP DE QUANTIDADE (+N) ---
+    const chip = document.createElement('div');
+    chip.classList.add('cart-chip-flyer');
+    chip.textContent = `+${qtyAdded}`;
+
+    document.body.appendChild(flyer);
+    document.body.appendChild(chip);
+
+    // posição inicial (centro da imagem/botão)
+    const startX = startRect.left + startRect.width / 2;
+    const startY = startRect.top + startRect.height / 2;
+    const endX   = targetRect.left + targetRect.width / 2;
+    const endY   = targetRect.top + targetRect.height / 2;
+
+    flyer.style.left      = `${startX}px`;
+    flyer.style.top       = `${startY}px`;
+    flyer.style.opacity   = '1';
+    flyer.style.transform = 'translate(-50%, -50%) scale(1)';
+
+    // chip começa um pouco acima do flyer
+    chip.style.left      = `${startX}px`;
+    chip.style.top       = `${startY - 40}px`;
+    chip.style.opacity   = '1';
+    chip.style.transform = 'translate(-50%, -50%) scale(1)';
+
+    // força reflow para registrar o estado inicial
+    void flyer.offsetWidth;
+
+    // estado final do flyer
+    flyer.style.left      = `${endX}px`;
+    flyer.style.top       = `${endY}px`;
+    flyer.style.opacity   = '0';
+    flyer.style.transform = 'translate(-50%, -50%) scale(0.35)';
+
+    // estado final do chip
+    chip.style.left      = `${endX}px`;
+    chip.style.top       = `${endY - 40}px`;
+    chip.style.opacity   = '0';
+    chip.style.transform = 'translate(-50%, -50%) scale(0.7)';
+
+    // anima o ícone do carrinho
+    cartIcon.classList.add('cart-toggle--bump');
+
+    setTimeout(() => {
+        flyer.remove();
+        chip.remove();
+        cartIcon.classList.remove('cart-toggle--bump');
+    }, 450);
+}
 
 const calcTotals = () => {
     let totalItems = 0;
@@ -118,20 +209,98 @@ const renderCart = () => {
                 ${thumbMarkup}
                 <div class="cart-meta">
                     <strong>${item.name}</strong>
-                    <span>${item.size} | ${item.color} | ${item.quantity} un</span>
+                    <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un</span>
                 </div>
-                <div class="cart-price">
-                    <b>${currency.format(item.quantity * item.salePrice)}</b>
-                    <button data-remove="${item.key}" title="Remover">&times;</button>
+                <div class="cart-actions">
+                    <div class="qty-control" data-qty="${item.key}">
+                        <button type="button" class="qty-btn" data-qty-dec="${item.key}" aria-label="Diminuir quantidade">−</button>
+                        <input type="number" min="1" value="${item.quantity}" data-qty-input="${item.key}" aria-label="Quantidade">
+                        <button type="button" class="qty-btn" data-qty-inc="${item.key}" aria-label="Aumentar quantidade">+</button>
+                    </div>
+                    <div class="cart-price">
+                        <b>${currency.format(item.quantity * item.salePrice)}</b>
+                        <button data-remove="${item.key}" title="Remover">&times;</button>
+                    </div>
                 </div>
             `;
             cartItemsWrapper.appendChild(div);
         });
+
+        // Totais resumidos ao final da lista, em cards
+        const totals = calcTotals();
+        const footer = document.createElement('div');
+        footer.className = 'cart-summary-footer';
+        footer.innerHTML = `
+            <div class="cart-summary-card">
+                <span class="label">Itens no carrinho</span>
+                <strong class="value">${totals.totalItems}</strong>
+            </div>
+            <div class="cart-summary-card">
+                <span class="label">Investimento</span>
+                <strong class="value">${currency.format(totals.totalValue)}</strong>
+            </div>
+            <div class="cart-summary-card">
+                <span class="label">Economia estimada</span>
+                <strong class="value value--highlight">${currency.format(totals.totalSavings)}</strong>
+                <span class="hint">comparado ao preço normal</span>
+            </div>
+        `;
+        cartItemsWrapper.appendChild(footer);
     }
 
+    // eventos de remover
     cartItemsWrapper.querySelectorAll('button[data-remove]').forEach((btn) => {
         btn.addEventListener('click', () => {
             cartStore.delete(btn.dataset.remove);
+            persistCart();
+            renderCart();
+            refreshSummary();
+            updateCheckoutModal();
+            updateCartBadge();
+        });
+    });
+
+    // diminuir quantidade
+    cartItemsWrapper.querySelectorAll('[data-qty-dec]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const key = btn.dataset.qtyDec;
+            const item = cartStore.get(key);
+            if (!item) return;
+            item.quantity = Math.max(1, item.quantity - 1);
+            cartStore.set(key, item);
+            persistCart();
+            renderCart();
+            refreshSummary();
+            updateCheckoutModal();
+            updateCartBadge();
+        });
+    });
+
+    // aumentar quantidade
+    cartItemsWrapper.querySelectorAll('[data-qty-inc]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const key = btn.dataset.qtyInc;
+            const item = cartStore.get(key);
+            if (!item) return;
+            item.quantity += 1;
+            cartStore.set(key, item);
+            persistCart();
+            renderCart();
+            refreshSummary();
+            updateCheckoutModal();
+            updateCartBadge();
+        });
+    });
+
+    // edição direta do input de quantidade
+    cartItemsWrapper.querySelectorAll('[data-qty-input]').forEach((input) => {
+        input.addEventListener('change', () => {
+            const key = input.dataset.qtyInput;
+            const item = cartStore.get(key);
+            if (!item) return;
+            const val = Number(input.value) || 1;
+            item.quantity = Math.max(1, val);
+            cartStore.set(key, item);
             persistCart();
             renderCart();
             refreshSummary();
@@ -194,7 +363,7 @@ const updateCheckoutModal = () => {
                         ${thumbMarkup}
                         <div class="checkout-info">
                             <strong>${item.name}</strong>
-                            <span>${item.size} · ${item.color} · ${item.quantity} un</span>
+                            <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un</span>
                         </div>
                         <strong class="checkout-price">${price}</strong>
                     </li>
@@ -269,7 +438,6 @@ const mountItem = (product, size, color, quantity, thumb = null) => {
 
     return item;
 };
-
 
 const setMainMedia = (card, type, src, alt = '') => {
     const mainWrapper = card.querySelector('[data-gallery-main]');
@@ -403,6 +571,7 @@ const attachCardEvents = () => {
 
         rebuildThumbs(activeColor);
 
+        // BOTÃO ADICIONAR AO CARRINHO – usando quantidade deste clique (+N no chip)
         addButton?.addEventListener('click', () => {
             const size = sizeSelect?.value;
             const color = colorSelect?.value;
@@ -422,8 +591,12 @@ const attachCardEvents = () => {
             }
             colorSelect?.classList.remove('invalid');
 
-            if (!quantity || quantity < 1) {
-                quantityInput.value = 1;
+            let addedQty = quantity;
+            if (!addedQty || addedQty < 1) {
+                addedQty = 1;
+                if (quantityInput) {
+                    quantityInput.value = '1';
+                }
             }
 
             let thumb = null;
@@ -434,7 +607,8 @@ const attachCardEvents = () => {
                 thumb = product.thumb;
             }
 
-            const item = mountItem(product, size, color, Math.max(1, quantity), thumb);
+            // item com a quantidade deste clique
+            const item = mountItem(product, size, color, addedQty, thumb);
             const existing = cartStore.get(item.key);
             if (existing) {
                 item.quantity += existing.quantity;
@@ -444,7 +618,9 @@ const attachCardEvents = () => {
             renderCart();
             refreshSummary();
             updateCheckoutModal();
-            openCartSidebar();
+
+            // chip mostra +N (quantidade adicionada neste clique)
+            animateToCart(addButton, addedQty);
         });
 
         openCartButtons.forEach((btn) => {
@@ -580,6 +756,7 @@ const openCheckout = () => {
 
     checkoutOverlay?.classList.add('active');
     updateCheckoutModal();
+    closeCartSidebar();
 };
 
 const openCartSidebar = () => {
@@ -691,7 +868,3 @@ window.addEventListener('storage', (event) => {
         updateCheckoutModal();
     }
 });
-
-
-
-
