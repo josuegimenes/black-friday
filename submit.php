@@ -145,6 +145,13 @@ function create_mailer(array $config): PHPMailer
     }
     return $mailer;
 }
+
+function format_color_label(string $value): string
+{
+    $clean = str_replace(['-', '_'], ' ', $value);
+    $clean = preg_replace('/\s+/', ' ', trim($clean));
+    return ucwords(mb_strtolower($clean, 'UTF-8'));
+}
 function build_email_body(string $name, array $cartData, string $logoUrl, string $groupLink): string
 {
     $totals = $cartData['totals'] ?? [];
@@ -154,13 +161,15 @@ function build_email_body(string $name, array $cartData, string $logoUrl, string
         $unitPrice = (float)($item['salePrice'] ?? 0);
         $lineTotal = $unitPrice * max(1, $quantity);
         $thumbUrl = canonical_media_url($item['thumb'] ?? null);
+        $colorRaw = $item['colorLabel'] ?? $item['color'] ?? '-';
         $items[] = [
             'name' => $item['name'] ?? 'Produto',
-            'color' => $item['color'] ?? '-',
+            'color' => format_color_label($colorRaw),
             'size' => $item['size'] ?? '-',
             'quantity' => $quantity,
             'line_total' => format_currency($lineTotal),
             'thumb' => $thumbUrl,
+            'payment' => $item['paymentLabel'] ?? null,
         ];
     }
 

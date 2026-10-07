@@ -26,7 +26,7 @@ $progress = 89;
         </p>
         <p>Entre agora no grupo exclusivo:</p>
         <a href="https://chat.whatsapp.com/CrFlwHsXKoOKTkX9kqvdJM" target="_blank" rel="noopener">Acessar o grupo VIP no WhatsApp</a>
-        <p style="margin-top:24px; color:#9ea1b7;">Para editar o carrinho, retorne a categoria desejada e envie o formulario novamente.</p>
+        <p style="margin-top:24px; color:#9ea1b7;">Para incluir mais itens no carrinho, retorne a categoria desejada e envie o formulario novamente.</p>
     </div>
 </section>
 <script src="assets/js/main.js"></script>

@@ -59,7 +59,10 @@ function render_reservation_email(array $data): string
                                     </td>
                                     <td style="padding:14px 18px;">
                                         <strong style="display:block;font-size:15px;"><?= htmlspecialchars($item['name'], ENT_QUOTES, 'UTF-8') ?></strong>
-                                        <span style="color:#8c8a98;font-size:12px;">Cor: <?= htmlspecialchars($item['color'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <span style="color:#8c8a98;font-size:12px;display:block;">Cor: <?= htmlspecialchars($item['color'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <?php if (!empty($item['payment'])): ?>
+                                            <span style="color:#8c8a98;font-size:12px;display:block;">Pagamento: <?= htmlspecialchars($item['payment'], ENT_QUOTES, 'UTF-8') ?></span>
+                                        <?php endif; ?>
                                     </td>
                                     <td style="padding:14px 12px;text-align:center;"><?= (int) $item['quantity'] ?></td>
                                     <td style="padding:14px 12px;text-align:center;"><?= htmlspecialchars($item['size'], ENT_QUOTES, 'UTF-8') ?></td>
@@ -86,7 +89,7 @@ function render_reservation_email(array $data): string
                 <p style="text-align:center;margin:0 0 12px;">
                     <a href="<?= $groupLink ?>" style="display:inline-block;padding:16px 42px;border-radius:999px;background:#ff007f;color:#fff;text-decoration:none;font-weight:600;letter-spacing:1px;" target="_blank" rel="noopener">Entrar no grupo VIP</a>
                 </p>
-                <p style="margin:0;font-size:12px;color:#a09eb1;text-align:center;">Se precisar atualizar o carrinho, volte ao site e reenvie o formulário. Continuaremos garantindo a sua posição.</p>
+                <p style="margin:0;font-size:12px;color:#a09eb1;text-align:center;">Se precisar incluir mais itens no carrinho, volte ao site e reenvie o formulário.</p>
             </td>
         </tr>
     </table>
