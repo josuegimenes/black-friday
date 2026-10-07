@@ -205,15 +205,17 @@ const renderCart = () => {
             const thumbMarkup = item.thumb
                 ? `<div class="cart-thumb"><img src="${item.thumb}" alt="${item.name}"></div>`
                 : '<div class="cart-thumb placeholder"></div>';
+            const paymentText = item.paymentLabel ? `<span class="cart-payment">${item.paymentLabel}</span>` : '';
             div.innerHTML = `
                 ${thumbMarkup}
                 <div class="cart-meta">
                     <strong>${item.name}</strong>
                     <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un</span>
+                    ${paymentText}
                 </div>
                 <div class="cart-actions">
                     <div class="qty-control" data-qty="${item.key}">
-                        <button type="button" class="qty-btn" data-qty-dec="${item.key}" aria-label="Diminuir quantidade">−</button>
+                        <button type="button" class="qty-btn" data-qty-dec="${item.key}" aria-label="Diminuir quantidade">-</button>
                         <input type="number" min="1" value="${item.quantity}" data-qty-input="${item.key}" aria-label="Quantidade">
                         <button type="button" class="qty-btn" data-qty-inc="${item.key}" aria-label="Aumentar quantidade">+</button>
                     </div>
@@ -363,7 +365,7 @@ const updateCheckoutModal = () => {
                         ${thumbMarkup}
                         <div class="checkout-info">
                             <strong>${item.name}</strong>
-                            <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un</span>
+                            <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un${item.paymentLabel ? ` • ${item.paymentLabel}` : ''}</span>
                         </div>
                         <strong class="checkout-price">${price}</strong>
                     </li>
@@ -420,8 +422,9 @@ const toAbsoluteUrl = (url) => {
     }
 };
 
-const mountItem = (product, size, color, quantity, thumb = null) => {
+const mountItem = (product, size, color, quantity, thumb = null, payment = {}) => {
     const rawThumb = thumb ?? product.thumb ?? null;
+    const paymentTotal = payment.total ?? payment.paymentTotal ?? null;
     const item = {
         key: createKey(product.id, size, color),
         productId: product.id,
@@ -430,8 +433,10 @@ const mountItem = (product, size, color, quantity, thumb = null) => {
         color,
         quantity,
         originalPrice: Number(product.original_price ?? product.originalPrice ?? 0),
-        salePrice: Number(product.sale_price ?? product.salePrice ?? 0),
+        salePrice: Number(paymentTotal ?? product.sale_price ?? product.salePrice ?? 0),
         thumb: rawThumb ? toAbsoluteUrl(rawThumb) : null,
+        payment: payment.key ?? null,
+        paymentLabel: payment.label ?? null,
     };
 
     console.log('[BF_DEBUG] mountItem criado:', item);
@@ -492,6 +497,10 @@ const attachCardEvents = () => {
         const quantityInput = card.querySelector('input[name="quantity"]');
         const addButton = card.querySelector('[data-add-to-cart]');
         const openCartButtons = card.querySelectorAll('[data-open-cart]');
+        const pillsColorGroup = card.querySelector('[data-color-pills]');
+        const pillsSizeGroup = card.querySelector('[data-size-pills]');
+        const qtyDecBtn = card.querySelector('.qty-wrapper [data-qty-dec]');
+        const qtyIncBtn = card.querySelector('.qty-wrapper [data-qty-inc]');
 
         let activeColor = card.dataset.activeColor || Object.keys(colorMedia)[0] || '';
 
@@ -500,6 +509,25 @@ const attachCardEvents = () => {
             Array.from(selectEl.options).forEach((opt) => {
                 opt.selected = opt.value === value;
             });
+        };
+
+        const clearErrors = () => {
+            card.querySelectorAll('.field-error').forEach((el) => el.remove());
+        };
+
+        const showError = (message) => {
+            let errorEl = card.querySelector('.field-error');
+            if (!errorEl) {
+                errorEl = document.createElement('div');
+                errorEl.className = 'field-error';
+                const actionsRow = card.querySelector('.actions-row');
+                if (actionsRow?.parentNode) {
+                    actionsRow.parentNode.insertBefore(errorEl, actionsRow.nextSibling);
+                } else {
+                    card.appendChild(errorEl);
+                }
+            }
+            errorEl.textContent = message;
         };
 
         const rebuildThumbs = (colorSlug) => {
@@ -571,32 +599,54 @@ const attachCardEvents = () => {
 
         rebuildThumbs(activeColor);
 
-        // BOTÃO ADICIONAR AO CARRINHO – usando quantidade deste clique (+N no chip)
+        // controles de quantidade no card
+        qtyDecBtn?.addEventListener('click', () => {
+            if (!quantityInput) return;
+            const val = Math.max(1, Number(quantityInput.value || 1) - 1);
+            quantityInput.value = String(val);
+        });
+        qtyIncBtn?.addEventListener('click', () => {
+            if (!quantityInput) return;
+            const val = Math.max(1, Number(quantityInput.value || 1)) + 1;
+            quantityInput.value = String(val);
+        });
+
+        // BOTÃO ADICIONAR AO CARRINHO - usando quantidade deste clique (+N no chip)
         addButton?.addEventListener('click', () => {
+            clearErrors();
+
             const size = sizeSelect?.value;
             const color = colorSelect?.value;
             const quantity = Number(quantityInput?.value || 0);
+            const paymentSelect = card.querySelector('[data-payment]');
+            const selectedPayment = paymentSelect?.selectedOptions?.[0];
+            const paymentTotal = selectedPayment ? Number(selectedPayment.dataset.total || NaN) : null;
+            const paymentKey = selectedPayment?.value || null;
+            const paymentLabel = selectedPayment?.textContent?.trim() || null;
+
+            let hasError = false;
+            if (!color) {
+                hasError = true;
+                showError('Selecione a cor.');
+            }
 
             if (!size) {
-                sizeSelect?.classList.add('invalid');
-                sizeSelect?.focus();
-                return;
+                hasError = true;
+                showError('Selecione o tamanho.');
             }
-            sizeSelect?.classList.remove('invalid');
-
-            if (!color) {
-                colorSelect?.classList.add('invalid');
-                colorSelect?.focus();
-                return;
-            }
-            colorSelect?.classList.remove('invalid');
 
             let addedQty = quantity;
             if (!addedQty || addedQty < 1) {
+                hasError = true;
+                showError('Informe a quantidade.');
                 addedQty = 1;
                 if (quantityInput) {
                     quantityInput.value = '1';
                 }
+            }
+
+            if (hasError) {
+                return;
             }
 
             let thumb = null;
@@ -608,7 +658,11 @@ const attachCardEvents = () => {
             }
 
             // item com a quantidade deste clique
-            const item = mountItem(product, size, color, addedQty, thumb);
+            const item = mountItem(product, size, color, addedQty, thumb, {
+                total: Number.isNaN(paymentTotal) ? null : paymentTotal,
+                key: paymentKey,
+                label: paymentLabel,
+            });
             const existing = cartStore.get(item.key);
             if (existing) {
                 item.quantity += existing.quantity;
