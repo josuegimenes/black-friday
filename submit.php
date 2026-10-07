@@ -12,12 +12,38 @@ function base_url(): string
 {
     $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
     $host = $_SERVER['HTTP_HOST'] ?? 'vesteme.com.br';
-    return rtrim($scheme . '://' . $host, '/');
+
+    // Caminho do script atual, ex: /black-friday/submit.php
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? '';
+    $dir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/.');
+
+    // Se estiver na raiz, $dir fica vazio
+    $basePath = $dir ? $dir : '';
+
+    return rtrim($scheme . '://' . $host . $basePath, '/');
 }
 
 function format_currency(float $value): string
 {
     return 'R$ ' . number_format($value, 2, ',', '.');
+}
+
+function resolve_media_url(?string $path): ?string
+{
+    if (!$path) {
+        return null;
+    }
+
+    $trimmed = trim($path);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    if (preg_match('#^https?://#i', $trimmed)) {
+        return $trimmed;
+    }
+
+    return base_url() . '/' . ltrim($trimmed, '/');
 }
 
 function format_brasilia_datetime(string $format = 'd/m/Y H:i'): string
@@ -112,6 +138,7 @@ function build_email_body(string $name, array $cartData, string $logoUrl, string
             'size' => $item['size'] ?? '-',
             'quantity' => $quantity,
             'line_total' => format_currency($lineTotal),
+            'thumb' => resolve_media_url($item['thumb'] ?? null),
         ];
     }
 

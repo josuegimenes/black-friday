@@ -482,6 +482,14 @@ $otherCategories = array_filter(
 </footer>
 <script>
     window.catalogProducts = <?= json_encode($products, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    window.catalogById = {};
+    if (Array.isArray(window.catalogProducts)) {
+        window.catalogProducts.forEach(function (p) {
+            if (p && p.id) {
+                window.catalogById[p.id] = p;
+            }
+        });
+    }
 </script>
 <script src="assets/js/main.js"></script>
 <script src="assets/js/catalog.js"></script>
