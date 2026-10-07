@@ -56,7 +56,7 @@
 .kpis {
     display: grid;
     grid-template-columns: repeat(4, minmax(160px, 1fr));
-    gap: 12px;
+    gap: 14px;
     margin-top: 16px;
 }
 
@@ -110,7 +110,7 @@
 .status-row {
     display: flex;
     align-items: center;   /* todos alinhados verticalmente */
-    gap: 12px;
+    gap: 14px;
     flex-wrap: nowrap;
 }
 
@@ -118,7 +118,7 @@
     display: flex;
     flex-direction: row;
     align-items: flex-end;   /* botão acompanha a base do select */
-    gap: 12px;
+    gap: 14px;
     flex: 1;
 }
 
@@ -136,7 +136,7 @@
     display: flex;
     flex-direction: row;
     align-items: center;         /* alinha pela mesma linha do select/botão */
-    gap: 12px;
+    gap: 14px;
     flex-wrap: nowrap;           /* impede quebra de linha */
     margin-top: 0;
 }
@@ -330,3 +330,218 @@
     }
 
 }
+
+
+/* Ações inline nos itens */
+.item-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 14px;
+    margin-top: 10px;
+}
+
+.inline-form {
+    background: #0b0b14;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 12px;
+    display: grid;
+    gap: 10px;
+}
+
+.inline-form label {
+    color: #d2d4de;
+    font-size: .9rem;
+    display: grid;
+    gap: 8px;
+}
+
+.inline-form input[type="text"],
+.inline-form input[type="number"] {
+    background: #0f111a;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 10px;
+    padding: 8px 10px;
+    color: #f5f5f7;
+    font-size: .95rem;
+}
+
+.grid-edit {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 10px 12px;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #ff4b4b, #ff0077);
+    border: none;
+    color: #fff;
+    border-radius: 12px;
+    padding: 10px 12px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    cursor: pointer;
+}
+
+.inline-form .btn-primary {
+    width: fit-content;
+}
+
+@media (max-width: 900px) {
+    .item-actions {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 680px) {
+    .grid-edit {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+
+/* Botões ícones no item */
+.item-actions-bar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.icon-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.16);
+    background: rgba(255,255,255,.04);
+    color: #f5f5f7;
+    cursor: pointer;
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+
+.icon-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
+
+.icon-btn.danger {
+    border-color: rgba(255, 0, 127, 0.45);
+    color: #ff6b9a;
+}
+
+/* Modais */
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(2px);
+    z-index: 999;
+}
+
+.modal-backdrop.is-hidden {
+    display: none;
+}
+
+.modal-card {
+    background: #0b0b12;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 20px;
+    width: min(560px, 92vw);
+    box-shadow: 0 25px 60px rgba(0,0,0,.6);
+    position: relative;
+}
+
+.modal-card h3 {
+    margin: 0 0 8px;
+}
+
+.modal-card p.muted {
+    margin-top: 0;
+    margin-bottom: 16px;
+}
+
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.06);
+    color: #f5f5f7;
+    cursor: pointer;
+}
+
+.modal-form {
+    display: grid;
+    gap: 14px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+
+
+/* Inputs monetários e numéricos em modais */
+.modal-form input[type="number"],
+.modal-form input[type="text"],
+.modal-form input[list] {
+    background: #0f111a;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #f5f5f7;
+    font-size: .95rem;
+}
+
+.modal-form select {
+    background: #0f111a;
+    border: 1px solid rgba(255,255,255,.15);
+    border-radius: 10px;
+    padding: 10px 12px;
+    color: #f5f5f7;
+    font-size: .95rem;
+}
+
+.modal-form label {
+    display: grid;
+    gap: 8px;
+    color: #e5e7f0;
+}
+
+.modal-form .grid-edit label {
+    gap: 6px;
+}
+
+
+
+/* Espaçamento extra entre rótulos e inputs nos modais */
+.grid-edit label {
+    gap: 8px;
+}
+
+.modal-form label {
+    gap: 10px;
+}
+
+
+/* Ajuste largura do campo de quantidade no modal */
+.grid-edit label.is-qty,
+.grid-edit label.is-qty input {
+    max-width: 120px;
+}
+
+
+/* Linha completa para o select de produto no modal */
+.grid-edit label.full-row {
+    grid-column: 1 / -1;
+}
+
