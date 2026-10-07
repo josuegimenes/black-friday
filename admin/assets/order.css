@@ -217,8 +217,8 @@
 
 .item {
     display: grid;
-    grid-template-columns: 92px 1fr 160px;
-    gap: 16px;
+    grid-template-columns: 150px 1fr 160px;
+    gap: 18px;
     align-items: center;
     background: #09090f;
     border: 1px solid rgba(255,255,255,.07);
@@ -227,8 +227,8 @@
 }
 
 .thumb {
-    width: 92px;
-    height: 92px;
+    width: 140px;
+    height: 140px;
     border-radius: 16px;
     overflow: hidden;
     background: #0b0b11;
