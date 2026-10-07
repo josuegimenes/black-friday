@@ -25,7 +25,7 @@ function render_reservation_email(array $data): string
         </tr>
         <tr>
             <td style="background:#ffffff;border-radius:28px;padding:32px;border:1px solid #efeff5;box-shadow:0 25px 50px rgba(13,15,35,0.08);">
-                <p style="margin:0 0 12px;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ff007f;text-align:center;">Maior Black da Vésteme</p>
+                <p style="margin:0 0 12px;font-size:13px;letter-spacing:3px;text-transform:uppercase;color:#ff007f;text-align:center;">A Maior Black da Vésteme</p>
                 <h1 style="margin:0 0 16px;font-size:26px;line-height:1.3;color:#07060c;text-align:center;"><?= $name ?>, recebemos o seu interesse nestes produtos!</h1>
                 <p style="margin:0 0 24px;color:#4f4c5c;font-size:15px;line-height:1.6;text-align:center;">A reserva foi registrada em <strong><?= $date ?></strong>. Seguimos liberando os pagamentos até 28/11 (ou enquanto houver estoque), obedecendo a ordem de cadastro. Confira os itens abaixo:</p>
 

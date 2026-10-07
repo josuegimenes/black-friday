@@ -1,0 +1,332 @@
+/* --------- Estrutura geral dos cards da página de pedido --------- */
+
+.order-shell {
+    display: grid;
+    gap: 24px;
+}
+
+.card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: 0 25px 60px rgba(0,0,0,.45);
+}
+
+.card.pad {
+    padding: 28px;
+}
+
+/* --------- Cabeçalho de informações do cliente --------- */
+
+.order-head {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.order-head .cell strong {
+    font-size: 1.05rem;
+}
+
+.cell-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: .85rem;
+    color: var(--muted);
+}
+
+/* Ícones sem “bolota” nem brilho exagerado */
+.info-icon {
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.info-icon svg {
+    width: 22px;
+    height: 22px;
+    display: block;
+}
+
+/* --------- KPIs superiores + card de Status atual --------- */
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(160px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.kpi {
+    background: linear-gradient(135deg, rgba(255,79,222,.12), rgba(63,250,250,.08));
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 18px;
+    padding: 18px;
+}
+
+.kpi span {
+    color: var(--muted);
+    font-size: .75rem;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+}
+
+.kpi strong {
+    display: block;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.35rem;
+    margin-top: 6px;
+}
+
+.kpi--success strong {
+    color: var(--success);
+}
+
+/* Card especial para o status atual */
+.kpi--status {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.kpi-status-chip {
+    margin-top: 8px;
+}
+
+/* --------- Card de atualização de status --------- */
+
+/* Card de atualização de status – ocupa 3 colunas da grid de KPIs */
+.status-box {
+    background: #0a0a10;
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 18px;
+    padding: 16px 20px;
+    grid-column: 1 / span 3;    /* largura de 3 cards */
+}
+
+.status-row {
+    display: flex;
+    align-items: center;   /* todos alinhados verticalmente */
+    gap: 12px;
+    flex-wrap: nowrap;
+}
+
+.status-form {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;   /* botão acompanha a base do select */
+    gap: 12px;
+    flex: 1;
+}
+
+/* Botão SALVAR STATUS com mesma altura do select */
+.status-form .btn-primary {
+    white-space: nowrap;         /* mantém "SALVAR STATUS" em uma linha só */
+    height: 43px;                /* mesma altura do select */
+    padding: 0 32px;             /* só lateral, centraliza o texto */
+    display: inline-flex;
+    align-items: center;
+}
+
+/* Botões de contato próximos ao botão de salvar */
+.inline-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: center;         /* alinha pela mesma linha do select/botão */
+    gap: 12px;
+    flex-wrap: nowrap;           /* impede quebra de linha */
+    margin-top: 0;
+}
+
+.inline-actions .btn-ghost {
+    white-space: nowrap;         /* texto em uma linha só */
+    height: 43px;                /* mesma altura do select e do SALVAR */
+    padding: 0 16px;             /* só lateral */
+    display: inline-flex;
+    align-items: center;         /* centraliza o texto dentro do botão */
+}
+
+.status-label {
+    font-size: 0.85rem;
+    color: var(--muted);
+    flex: 1;
+    min-width: 220px;
+}
+
+/* Select com seta própria */
+
+.select-wrapper {
+    position: relative;
+    margin-top: 6px;
+}
+
+.select-wrapper select {
+    width: 100%;
+    height: 43px;
+    padding-right: 30px;
+}
+
+.select-wrapper::after {
+    content: '▾';
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 0.75rem;
+    color: var(--muted);
+    pointer-events: none;
+}
+
+/* Botões de contato próximos ao botão de salvar */
+
+.btn-ghost {
+    background: transparent;
+    border: 1px dashed rgba(255,255,255,.18);
+    color: var(--text);
+    padding: 10px 12px;
+    border-radius: 12px;
+    font-size: .8rem;
+    text-transform: none;
+    letter-spacing: 0;
+    text-decoration: none;
+}
+
+/* Margem da mensagem de status */
+
+.order-alert {
+    margin-top: 14px;
+}
+
+/* --------- Seção de itens do carrinho --------- */
+
+.section-title {
+    margin: 8px 0 12px;
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: .5px;
+    font-size: 1.35rem;
+}
+
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.item {
+    display: grid;
+    grid-template-columns: 92px 1fr 160px;
+    gap: 16px;
+    align-items: center;
+    background: #09090f;
+    border: 1px solid rgba(255,255,255,.07);
+    border-radius: 20px;
+    padding: 12px;
+}
+
+.thumb {
+    width: 92px;
+    height: 92px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: #0b0b11;
+    border: 1px solid rgba(255,255,255,.08);
+}
+
+.thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.title {
+    font-weight: 600;
+    letter-spacing: .3px;
+}
+
+.meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.meta .row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.meta .row span {
+    background: rgba(255,255,255,.06);
+    padding: 4px 8px;
+    border-radius: 999px;
+}
+
+.right {
+    text-align: right;
+}
+
+.muted {
+    color: var(--muted);
+    font-size: .9rem;
+}
+
+.price {
+    font-weight: 600;
+}
+
+/* --------- Responsivo específico da página --------- */
+
+@media (max-width: 1100px) {
+    .kpis {
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+    }
+
+    /* em telas menores, o card passa a ocupar 100% */
+    .status-box {
+        grid-column: 1 / -1;
+    }
+}
+
+@media (max-width: 900px) {
+    .order-head {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 800px) {
+    .kpis {
+        grid-template-columns: 1fr;
+    }
+
+    .item {
+        grid-template-columns: 84px 1fr;
+    }
+
+    .item .right {
+        grid-column: 2 / -1;
+        text-align: left;
+        margin-top: 6px;
+    }
+}
+
+@media (max-width: 720px) {
+    .order-head {
+        grid-template-columns: 1fr;
+    }
+
+    .status-row {
+        flex-wrap: wrap;
+        align-items: flex-start;
+    }
+
+    .status-form {
+        flex-wrap: wrap;
+    }
+
+}
