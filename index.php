@@ -27,7 +27,7 @@ $faqItems = [
     ],
     [
         'question' => 'Quais peças participam?',
-        'answer' => 'Selecionamos as oito categorias líderes do atacado Vesteme: vestidos longos e curtos, conjuntos, blusas, saias, calças, shorts e macaquinhos.',
+        'answer' => 'Selecionamos as oito categorias líderes do atacado Vésteme: vestidos longos e curtos, conjuntos, blusas, saias, calças, shorts e macaquinhos.',
     ],
     [
         'question' => 'Tem frete grátis?',
@@ -52,8 +52,9 @@ $faqItems = [
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>A maior Black da Vesteme</title>
+    <title>A maior Black da Vésteme</title>
     <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="icon" type="image/jpeg" href="favicon.ico">
 </head>
 <body>
     <main class="landing-shell">

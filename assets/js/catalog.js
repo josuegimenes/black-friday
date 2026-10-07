@@ -12,12 +12,28 @@ const summaryItems = document.getElementById('summaryItems');
 const summarySavings = document.getElementById('summarySavings');
 const summaryValue = document.getElementById('summaryValue');
 const cartInvest = document.getElementById('cartInvest');
-const cartSavings = document.getElementById('cartSavings');
+const cartSavingsValue = document.getElementById('cartSavingsValue');
+const summaryItemsSecondary = document.getElementById('summaryItemsSecondary');
 const checkoutOverlay = document.getElementById('checkoutOverlay');
 const checkoutList = document.getElementById('checkoutList');
 const checkoutTotals = document.getElementById('checkoutTotals');
 const cartPayloadInput = document.getElementById('cartPayload');
 const checkoutForm = document.getElementById('checkoutForm');
+const emailInput = document.querySelector('input[name="email"]');
+const whatsappInput = document.querySelector('input[name="whatsapp"]');
+const mergePreviousInput = document.getElementById('mergePrevious');
+const mergeOverlay = document.getElementById('mergeOverlay');
+const mergeEmailLabel = document.getElementById('mergeEmail');
+const mergeInfoText = document.getElementById('mergeInfo');
+const mergeAppendBtn = document.getElementById('mergeAppend');
+const mergeReplaceBtn = document.getElementById('mergeReplace');
+const mergeCloseBtn = document.getElementById('closeMergeModal');
+
+let existingLeadInfo = null;
+let existingLeadCheckedEmail = '';
+let mergeChoice = null;
+let pendingSubmit = null;
+let skipNextSubmitValidation = false;
 
 const calcTotals = () => {
     let totalItems = 0;
@@ -77,10 +93,11 @@ const renderCart = () => {
 const refreshSummary = () => {
     const { totalItems, totalValue, totalSavings } = calcTotals();
     if (summaryItems) summaryItems.textContent = totalItems;
+    if (summaryItemsSecondary) summaryItemsSecondary.textContent = totalItems;
     if (summaryValue) summaryValue.textContent = currency.format(totalValue);
     if (summarySavings) summarySavings.textContent = currency.format(totalSavings);
     if (cartInvest) cartInvest.textContent = currency.format(totalValue);
-    if (cartSavings) cartSavings.textContent = `Economia: ${currency.format(totalSavings)}`;
+    if (cartSavingsValue) cartSavingsValue.textContent = currency.format(totalSavings);
 };
 
 const createKey = (id, size, color) => `${id}__${size}__${color}`;
@@ -127,11 +144,7 @@ const updateCheckoutModal = () => {
 
 const persistCart = () => {
     try {
-        const payload = {
-            version: 1,
-            updatedAt: Date.now(),
-            items: Array.from(cartStore.values()),
-        };
+        const payload = { items: Array.from(cartStore.values()) };
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
     } catch (error) {
         console.warn('Nao foi possivel salvar o carrinho no armazenamento local.', error);
@@ -235,6 +248,123 @@ const attachCardEvents = () => {
     });
 };
 
+const digitsOnly = (value = '') => value.replace(/\D/g, '');
+
+const formatWhatsapp = (value) => {
+    const digits = digitsOnly(value).slice(0, 11);
+    if (!digits) return '';
+    const ddd = digits.slice(0, 2);
+    if (digits.length <= 2) {
+        return `(${ddd}`;
+    }
+    if (digits.length <= 6) {
+        return `(${ddd}) ${digits.slice(2)}`;
+    }
+    if (digits.length <= 10) {
+        return `(${ddd}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+    }
+    return `(${ddd}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+};
+
+const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+const fetchExistingLead = async (email) => {
+    const normalized = email.toLowerCase();
+    try {
+        const response = await fetch(`check_lead.php?email=${encodeURIComponent(normalized)}`, { cache: 'no-store' });
+        if (!response.ok) {
+            existingLeadInfo = null;
+            existingLeadCheckedEmail = normalized;
+            return null;
+        }
+        const data = await response.json();
+        existingLeadInfo = data.exists ? data.lead : null;
+        existingLeadCheckedEmail = normalized;
+        mergeChoice = null;
+        if (!existingLeadInfo && mergePreviousInput) {
+            mergePreviousInput.value = 'no';
+        }
+        return existingLeadInfo;
+    } catch (error) {
+        console.error('Nao foi possivel verificar pedidos anteriores.', error);
+        existingLeadInfo = null;
+        return null;
+    }
+};
+
+const openMergeModal = (lead, email) => {
+    if (!mergeOverlay) return;
+    mergeEmailLabel.textContent = email;
+    const createdAt = lead?.created_at_br || lead?.created_at || 'recentemente';
+    const total = currency.format(lead?.total_value ?? 0);
+    mergeInfoText.textContent = `Seu último pedido foi registrado em ${createdAt} com investimento de ${total}. Escolha como deseja continuar.`;
+    mergeOverlay.classList.add('active');
+    mergeOverlay.setAttribute('aria-hidden', 'false');
+};
+
+const closeMergeModal = () => {
+    if (!mergeOverlay) return;
+    mergeOverlay.classList.remove('active');
+    mergeOverlay.setAttribute('aria-hidden', 'true');
+    mergeInfoText.textContent = '';
+};
+
+const applyMergeDecision = (shouldMerge) => {
+    mergeChoice = shouldMerge ? 'yes' : 'no';
+    if (mergePreviousInput) mergePreviousInput.value = mergeChoice;
+    closeMergeModal();
+    if (pendingSubmit) {
+        skipNextSubmitValidation = true;
+        pendingSubmit();
+        pendingSubmit = null;
+    }
+};
+
+mergeAppendBtn?.addEventListener('click', () => applyMergeDecision(true));
+mergeReplaceBtn?.addEventListener('click', () => applyMergeDecision(false));
+mergeCloseBtn?.addEventListener('click', () => {
+    closeMergeModal();
+    mergeChoice = null;
+    pendingSubmit = null;
+});
+
+if (whatsappInput) {
+    whatsappInput.addEventListener('input', () => {
+        const formatted = formatWhatsapp(whatsappInput.value);
+        whatsappInput.value = formatted;
+        if (digitsOnly(formatted).length >= 10) {
+            whatsappInput.classList.remove('invalid');
+        }
+    });
+    whatsappInput.addEventListener('blur', () => {
+        if (digitsOnly(whatsappInput.value).length < 10) {
+            whatsappInput.classList.add('invalid');
+        }
+    });
+}
+
+if (emailInput) {
+    emailInput.addEventListener('input', () => {
+        mergeChoice = null;
+        existingLeadInfo = null;
+        existingLeadCheckedEmail = '';
+        if (mergePreviousInput) mergePreviousInput.value = 'no';
+        if (isValidEmail(emailInput.value.trim())) {
+            emailInput.classList.remove('invalid');
+        }
+    });
+
+    emailInput.addEventListener('blur', async () => {
+        const email = emailInput.value.trim().toLowerCase();
+        if (isValidEmail(email)) {
+            await fetchExistingLead(email);
+        } else {
+            existingLeadInfo = null;
+            existingLeadCheckedEmail = '';
+        }
+    });
+}
+
 const openCheckout = () => {
     if (cartStore.size === 0) {
         alert('Selecione ao menos um produto antes de fechar o carrinho.');
@@ -256,12 +386,50 @@ checkoutOverlay?.addEventListener('click', (event) => {
     }
 });
 
-checkoutForm?.addEventListener('submit', (event) => {
+checkoutForm?.addEventListener('submit', async (event) => {
+    if (skipNextSubmitValidation) {
+        skipNextSubmitValidation = false;
+        return;
+    }
+
     if (cartStore.size === 0) {
         event.preventDefault();
         alert('Adicione produtos antes de enviar sua reserva.');
         return;
     }
+
+    const emailRaw = emailInput?.value.trim() ?? '';
+    const emailNormalized = emailRaw.toLowerCase();
+    if (emailInput && !isValidEmail(emailRaw)) {
+        event.preventDefault();
+        emailInput.classList.add('invalid');
+        emailInput.focus();
+        alert('Informe um e-mail valido.');
+        return;
+    }
+
+    if (emailInput && isValidEmail(emailRaw) && emailNormalized !== existingLeadCheckedEmail) {
+        await fetchExistingLead(emailNormalized);
+    }
+
+    if (existingLeadInfo && mergeChoice === null) {
+        event.preventDefault();
+        pendingSubmit = () => checkoutForm.requestSubmit();
+        openMergeModal(existingLeadInfo, emailRaw);
+        return;
+    } else if (!existingLeadInfo && mergePreviousInput) {
+        mergePreviousInput.value = 'no';
+    }
+
+    const whatsappDigits = digitsOnly(whatsappInput?.value ?? '');
+    if (whatsappInput && whatsappDigits.length < 10) {
+        event.preventDefault();
+        whatsappInput.classList.add('invalid');
+        whatsappInput.focus();
+        alert('Informe um WhatsApp valido.');
+        return;
+    }
+
     updateCheckoutModal();
 });
 

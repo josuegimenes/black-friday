@@ -30,6 +30,7 @@ pnpm-lock.yaml
 .env.*
 *.key
 config/config.php
+config/mailer.php
 config/*.local.php
 
 # Build artifacts / uploads
