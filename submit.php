@@ -7,6 +7,7 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
 
 const WHATSAPP_GROUP_LINK = 'https://chat.whatsapp.com/CrFlwHsXKoOKTkX9kqvdJM';
+const PUBLIC_MEDIA_BASE = 'https://amaiorblack.vesteme.com.br';
 
 function base_url(): string
 {
@@ -44,6 +45,25 @@ function resolve_media_url(?string $path): ?string
     }
 
     return base_url() . '/' . ltrim($trimmed, '/');
+}
+
+function canonical_media_url(?string $path): ?string
+{
+    $absolute = resolve_media_url($path);
+    if (!$absolute) {
+        return null;
+    }
+
+    if (stripos($absolute, 'http') !== 0) {
+        return rtrim(PUBLIC_MEDIA_BASE, '/') . '/' . ltrim($absolute, '/');
+    }
+
+    if (preg_match('#https?://(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?/#i', $absolute)) {
+        $relative = preg_replace('#https?://(?:localhost|127\\.0\\.0\\.1)(?::\\d+)?/#i', '', $absolute);
+        return rtrim(PUBLIC_MEDIA_BASE, '/') . '/' . ltrim($relative, '/');
+    }
+
+    return $absolute;
 }
 
 function format_brasilia_datetime(string $format = 'd/m/Y H:i'): string
@@ -132,13 +152,14 @@ function build_email_body(string $name, array $cartData, string $logoUrl, string
         $quantity = (int)($item['quantity'] ?? 0);
         $unitPrice = (float)($item['salePrice'] ?? 0);
         $lineTotal = $unitPrice * max(1, $quantity);
+        $thumbUrl = canonical_media_url($item['thumb'] ?? null);
         $items[] = [
             'name' => $item['name'] ?? 'Produto',
             'color' => $item['color'] ?? '-',
             'size' => $item['size'] ?? '-',
             'quantity' => $quantity,
             'line_total' => format_currency($lineTotal),
-            'thumb' => resolve_media_url($item['thumb'] ?? null),
+            'thumb' => $thumbUrl,
         ];
     }
 
@@ -160,14 +181,25 @@ function build_email_body(string $name, array $cartData, string $logoUrl, string
 
 function send_confirmation_email(string $to, string $name, array $cartData, array $config): void
 {
+    $logoUrl = canonical_media_url('/assets/img/logo-vesteme-black.jpg') ?? base_url() . '/assets/img/logo-vesteme-black.jpg';
+    $body = build_email_body($name, $cartData, $logoUrl, WHATSAPP_GROUP_LINK);
+
+    if (isset($_GET['debug']) && $_GET['debug'] === 'thumbs') {
+        header('Content-Type: text/html; charset=utf-8');
+        echo '<h2>DEBUG E-MAIL - THUMBS</h2>';
+        echo '<pre>';
+        print_r($cartData);
+        echo '</pre>';
+        echo '<hr>';
+        echo $body;
+        exit;
+    }
+
     if (empty($config['host']) || empty($config['username']) || empty($config['password'])) {
         error_log('Config SMTP incompleta. E-mail nao enviado.');
         return;
     }
-
-    $logoUrl = base_url() . '/assets/img/logo-vesteme-black.jpg';
-    $body = build_email_body($name, $cartData, $logoUrl, WHATSAPP_GROUP_LINK);
-    $subject = 'Parabéns! Sua reserva VIP foi confirmada 🎉';
+    $subject = 'Parabéns! Sua reserva VIP foi confirmada ✨';
     $altBody = strip_tags(str_replace(['<br>', '<br/>', '<br />'], "\n", $body));
 
     try {
@@ -183,7 +215,8 @@ function send_confirmation_email(string $to, string $name, array $cartData, arra
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (!defined('SUBMIT_SKIP_EXECUTION')) {
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: index.php');
     exit;
 }
@@ -271,3 +304,4 @@ if ($mailerConfig !== null) {
 
 header('Location: obrigado.php?name=' . urlencode($fullName));
 exit;
+}

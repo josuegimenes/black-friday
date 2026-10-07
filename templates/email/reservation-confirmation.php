@@ -42,7 +42,13 @@ function render_reservation_email(array $data): string
                         </thead>
                         <tbody>
                             <?php foreach ($items as $item): ?>
-                                <?php $thumb = !empty($item['thumb']) ? htmlspecialchars($item['thumb'], ENT_QUOTES, 'UTF-8') : ''; ?>
+                                <?php
+                                $thumbRaw = $item['thumb'] ?? '';
+                                if ($thumbRaw !== '' && stripos($thumbRaw, 'http') !== 0 && defined('PUBLIC_MEDIA_BASE')) {
+                                    $thumbRaw = rtrim(PUBLIC_MEDIA_BASE, '/') . '/' . ltrim($thumbRaw, '/');
+                                }
+                                $thumb = $thumbRaw !== '' ? htmlspecialchars($thumbRaw, ENT_QUOTES, 'UTF-8') : '';
+                                ?>
                                 <tr style="font-size:14px;color:#110f1b;border-top:1px solid #f0f1f6;">
                                     <td style="padding:14px 18px;text-align:left;">
                                         <?php if ($thumb): ?>

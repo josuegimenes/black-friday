@@ -234,7 +234,18 @@ const hydrateCart = (rawValue = null) => {
     }
 };
 
+const toAbsoluteUrl = (url) => {
+    if (!url) return null;
+    try {
+        return new URL(url, window.location.origin).toString();
+    } catch (error) {
+        console.warn('[BF_DEBUG] URL inválida para thumb:', url, error);
+        return url;
+    }
+};
+
 const mountItem = (product, size, color, quantity, thumb = null) => {
+    const rawThumb = thumb ?? product.thumb ?? null;
     const item = {
         key: createKey(product.id, size, color),
         productId: product.id,
@@ -244,14 +255,14 @@ const mountItem = (product, size, color, quantity, thumb = null) => {
         quantity,
         originalPrice: Number(product.original_price ?? product.originalPrice ?? 0),
         salePrice: Number(product.sale_price ?? product.salePrice ?? 0),
-        thumb: thumb ?? product.thumb ?? null,
+        thumb: rawThumb ? toAbsoluteUrl(rawThumb) : null,
     };
 
-    // 🔍 DEBUG: ver item exatamente como vai para o carrinho
     console.log('[BF_DEBUG] mountItem criado:', item);
 
     return item;
 };
+
 
 const attachGalleryControls = () => {
     document.querySelectorAll('[data-product-card]').forEach((card) => {
@@ -514,6 +525,7 @@ checkoutForm?.addEventListener('submit', async (event) => {
     }
 
     // 🔍 DEBUG: snapshot final que será enviado para o backend
+    console.log('[BF_DEBUG] Cart snapshot - ANTES DO SUBMIT checkoutForm', getCartSnapshot());
     debugCartSnapshot('ANTES DO SUBMIT checkoutForm');
 
     updateCheckoutModal();

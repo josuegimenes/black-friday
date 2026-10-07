@@ -70,6 +70,31 @@ function product_image_url(array $item): ?string
     return null;
 }
 
+function admin_site_origin(): string
+{
+    $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'vesteme.com.br';
+    return $scheme . '://' . $host;
+}
+
+function normalize_thumb_url(?string $url): ?string
+{
+    if (!$url) {
+        return null;
+    }
+
+    $trimmed = trim($url);
+    if ($trimmed === '') {
+        return null;
+    }
+
+    if (preg_match('#^https?://#i', $trimmed)) {
+        return $trimmed;
+    }
+
+    return admin_site_origin() . '/' . ltrim($trimmed, '/');
+}
+
 /** Placeholder minimalista que respeita a identidade */
 function placeholder_image(): string
 {
@@ -316,7 +341,8 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
                             $color = trim((string)($it['color'] ?? '-'));
                             $qty   = (int)($it['quantity'] ?? 0);
                             $sale  = (float)($it['salePrice'] ?? 0.0);
-                            $img   = product_image_url($it) ?: placeholder_image();
+                            $rawImg = product_image_url($it);
+                            $img   = $rawImg ? normalize_thumb_url($rawImg) : placeholder_image();
                         ?>
                             <div class="item">
                                 <div class="thumb">
