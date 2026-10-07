@@ -15,6 +15,7 @@ $pdo = get_pdo();
 
 /** Status disponíveis e helper de cor/badge */
 $statuses = [
+    'Novo',
     'Em preparação interna',
     'Aguardando pagamento',
     'Pagamento efetuado',
@@ -25,14 +26,16 @@ $statuses = [
 function status_chip_class(string $status): string
 {
     $map = [
+        'Novo' => 'status-new',
         'Em preparação interna' => 'status-prep',
-        'Aguardando pagamento'  => 'status-await',
-        'Pagamento efetuado'    => 'status-paid',
-        'Cancelado'             => 'status-cancel',
-        'Em trânsito'           => 'status-transit',
+        'Aguardando pagamento' => 'status-await',
+        'Pagamento efetuado' => 'status-paid',
+        'Cancelado' => 'status-cancel',
+        'Em trânsito' => 'status-transit',
     ];
     return $map[$status] ?? 'status-prep';
 }
+
 
 function safe(?string $t): string
 {
@@ -108,6 +111,21 @@ function placeholder_image(): string
       <rect x='34' y='108' width='92' height='10' rx='5' fill='rgba(255,255,255,0.08)'/>
     </svg>";
     return 'data:image/svg+xml;utf8,' . rawurlencode($svg);
+}
+
+function format_brasilia_datetime(?string $value, string $format = 'd/m/Y H:i'): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        $date = new DateTime($value);
+        $date->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+        return $date->format($format);
+    } catch (Throwable $exception) {
+        return '-';
+    }
 }
 
 $id = (int)($_GET['id'] ?? 0);
@@ -261,7 +279,7 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
                             </span>
                             Entrada
                         </span>
-                        <strong><?= !empty($lead['created_at']) ? date('d/m/Y H:i', strtotime($lead['created_at'])) : '-' ?></strong>
+                        <strong><?= format_brasilia_datetime($lead['created_at'] ?? null) ?></strong>
                     </div>
                 </div>
 
@@ -276,7 +294,7 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
                         <strong><?= money($totalValue) ?></strong>
                     </div>
                     <div class="kpi kpi--success">
-                        <span>Economia prevista</span>
+                        <span>Desconto previsto</span>
                         <strong><?= money($totalSavings) ?></strong>
                     </div>
                     <div class="kpi kpi--status">

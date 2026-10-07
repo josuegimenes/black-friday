@@ -281,7 +281,7 @@ try {
             ':total_items' => $totalItems,
             ':total_value' => $totalValue,
             ':total_savings' => $totalSavings,
-            ':status' => 'Em preparação interna',
+            ':status' => 'Novo',
         ]);
     }
 } catch (Throwable $exception) {

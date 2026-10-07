@@ -14,6 +14,7 @@ require __DIR__ . '/../config/db.php';
 
 $pdo = get_pdo();
 $statuses = [
+    'Novo',
     'Em preparação interna',
     'Aguardando pagamento',
     'Pagamento efetuado',
@@ -157,17 +158,34 @@ function highlight_term(?string $text, string $query): string
     return preg_replace($pattern, '<mark>$0</mark>', $escapedText);
 }
 
+function format_brasilia_datetime(?string $value, string $format = 'd/m/Y H:i'): string
+{
+    if (!$value) {
+        return '-';
+    }
+
+    try {
+        $date = new DateTime($value);
+        $date->setTimezone(new DateTimeZone('America/Sao_Paulo'));
+        return $date->format($format);
+    } catch (Throwable $exception) {
+        return '-';
+    }
+}
+
 function status_chip_class(string $status): string
 {
     $map = [
+        'Novo' => 'status-new',
         'Em preparação interna' => 'status-prep',
-        'Aguardando pagamento'  => 'status-await',
-        'Pagamento efetuado'    => 'status-paid',
-        'Cancelado'             => 'status-cancel',
-        'Em trânsito'           => 'status-transit',
+        'Aguardando pagamento' => 'status-await',
+        'Pagamento efetuado' => 'status-paid',
+        'Cancelado' => 'status-cancel',
+        'Em trânsito' => 'status-transit',
     ];
     return $map[$status] ?? 'status-prep';
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="pt-BR">
@@ -330,7 +348,7 @@ function status_chip_class(string $status): string
                             <?= htmlspecialchars($lead['status'] ?? 'Em preparação interna', ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </td>
-                    <td class="col-entry"><?= $lead['created_at'] ? date('d/m/Y H:i', strtotime($lead['created_at'])) : '-' ?></td>
+                            <td class="col-entry"><?= format_brasilia_datetime($lead['created_at'] ?? null) ?></td>
                     <td class="col-actions">
                         <a class="btn btn-icon" href="order.php?id=<?= $lead['id'] ?>" aria-label="Ver detalhes">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true">
