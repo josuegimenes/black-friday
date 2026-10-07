@@ -206,11 +206,12 @@ const renderCart = () => {
                 ? `<div class="cart-thumb"><img src="${item.thumb}" alt="${item.name}"></div>`
                 : '<div class="cart-thumb placeholder"></div>';
             const paymentText = item.paymentLabel ? `<span class="cart-payment">${item.paymentLabel}</span>` : '';
+            const colorDisplay = item.colorLabel || item.color;
             div.innerHTML = `
                 ${thumbMarkup}
                 <div class="cart-meta">
                     <strong>${item.name}</strong>
-                    <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un</span>
+                    <span>${item.size} &middot; ${colorDisplay} &middot; ${item.quantity} un</span>
                     ${paymentText}
                 </div>
                 <div class="cart-actions">
@@ -332,7 +333,6 @@ const updateCheckoutModal = () => {
 
     const snapshot = getCartSnapshot();
 
-    // 🔍 DEBUG: sempre que o modal/checkout for atualizado
     debugCartSnapshot(
         checkoutOverlay.classList.contains('active')
             ? 'checkout ABERTO (updateCheckoutModal)'
@@ -359,13 +359,14 @@ const updateCheckoutModal = () => {
                 const thumbMarkup = item.thumb
                     ? `<div class="checkout-thumb"><img src="${item.thumb}" alt="${item.name}"></div>`
                     : '<div class="checkout-thumb placeholder"></div>';
+                const colorDisplay = item.colorLabel || item.color;
 
                 return `
                     <li>
                         ${thumbMarkup}
                         <div class="checkout-info">
                             <strong>${item.name}</strong>
-                            <span>${item.size} &middot; ${item.color} &middot; ${item.quantity} un${item.paymentLabel ? ` • ${item.paymentLabel}` : ''}</span>
+                            <span>${item.size} · ${colorDisplay} · ${item.quantity} un${item.paymentLabel ? ` • ${item.paymentLabel}` : ''}</span>
                         </div>
                         <strong class="checkout-price">${price}</strong>
                     </li>
@@ -383,9 +384,7 @@ const updateCheckoutModal = () => {
     if (cartPayloadInput) {
         cartPayloadInput.value = JSON.stringify(snapshot);
     }
-};
-
-const persistCart = () => {
+};const persistCart = () => {
     try {
         const payload = { items: Array.from(cartStore.values()) };
         localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(payload));
@@ -422,7 +421,7 @@ const toAbsoluteUrl = (url) => {
     }
 };
 
-const mountItem = (product, size, color, quantity, thumb = null, payment = {}) => {
+const mountItem = (product, size, color, quantity, thumb = null, payment = {}, colorLabel = null) => {
     const rawThumb = thumb ?? product.thumb ?? null;
     const paymentTotal = payment.total ?? payment.paymentTotal ?? null;
     const item = {
@@ -431,6 +430,7 @@ const mountItem = (product, size, color, quantity, thumb = null, payment = {}) =
         name: product.name,
         size,
         color,
+        colorLabel: colorLabel || color,
         quantity,
         originalPrice: Number(product.original_price ?? product.originalPrice ?? 0),
         salePrice: Number(paymentTotal ?? product.sale_price ?? product.salePrice ?? 0),
@@ -532,7 +532,10 @@ const attachCardEvents = () => {
 
         const rebuildThumbs = (colorSlug) => {
             const media = colorMedia[colorSlug];
-            if (!media) return;
+            if (!media) {
+                console.warn('[BF_DEBUG] Nenhuma midia para cor', colorSlug, colorMedia);
+                return;
+            }
             const thumbsRail = card.querySelector('[data-thumbs]');
             if (!thumbsRail) return;
             thumbsRail.innerHTML = '';
@@ -583,8 +586,24 @@ const attachCardEvents = () => {
                 colorPills.forEach((p) => p.classList.remove('is-active'));
                 pill.classList.add('is-active');
                 setSelectValue(colorSelect, activeColor);
+                card.dataset.activeColor = activeColor;
                 rebuildThumbs(activeColor);
             });
+        });
+
+        // select de cor (fallback/teclado) também troca galeria
+        colorSelect?.addEventListener('change', (event) => {
+            const selected = event.target.value || '';
+            activeColor = selected;
+            colorPills.forEach((p) => {
+                if (p.dataset.color === selected) {
+                    p.classList.add('is-active');
+                } else {
+                    p.classList.remove('is-active');
+                }
+            });
+            card.dataset.activeColor = activeColor;
+            rebuildThumbs(activeColor);
         });
 
         const sizePills = card.querySelectorAll('[data-size-option]');
@@ -617,6 +636,7 @@ const attachCardEvents = () => {
 
             const size = sizeSelect?.value;
             const color = colorSelect?.value;
+            const colorLabel = colorSelect?.selectedOptions?.[0]?.textContent?.trim() || color || '';
             const quantity = Number(quantityInput?.value || 0);
             const paymentSelect = card.querySelector('[data-payment]');
             const selectedPayment = paymentSelect?.selectedOptions?.[0];
@@ -662,7 +682,7 @@ const attachCardEvents = () => {
                 total: Number.isNaN(paymentTotal) ? null : paymentTotal,
                 key: paymentKey,
                 label: paymentLabel,
-            });
+            }, colorLabel);
             const existing = cartStore.get(item.key);
             if (existing) {
                 item.quantity += existing.quantity;
