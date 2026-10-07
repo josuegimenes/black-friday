@@ -209,6 +209,13 @@
     font-size: 1.35rem;
 }
 
+.section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .items-list {
     display: flex;
     flex-direction: column;
