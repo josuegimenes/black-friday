@@ -226,7 +226,7 @@
 
 .item {
     display: grid;
-    grid-template-columns: 150px 1fr 160px;
+    grid-template-columns: 150px 1fr auto;
     gap: 18px;
     align-items: center;
     background: #09090f;
@@ -278,6 +278,11 @@
 
 .right {
     text-align: right;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+    justify-self: end;
 }
 
 .muted {
@@ -287,6 +292,34 @@
 
 .price {
     font-weight: 600;
+}
+
+.discount-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 6px;
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.discount-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: linear-gradient(135deg, rgba(255,79,222,0.25), rgba(63,250,250,0.18));
+    border: 1px solid rgba(255,255,255,0.2);
+    font-weight: 600;
+    font-size: .85rem;
+}
+
+.discount-text {
+    color: var(--muted);
+    font-size: .9rem;
 }
 
 /* --------- Responsivo específico da página --------- */

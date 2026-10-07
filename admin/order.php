@@ -534,6 +534,9 @@ $totalOriginal = $totalValue + $totalSavings;
                             $qty   = (int)($it['quantity'] ?? 0);
                             $sale  = (float)($it['salePrice'] ?? 0.0);
                             $orig  = isset($it['originalPrice']) ? (float)$it['originalPrice'] : null;
+                            $discountPerUnit = $orig !== null ? max(0, $orig - $sale) : 0;
+                            $discountTotal = $discountPerUnit * $qty;
+                            $discountPercent = ($orig && $orig > 0) ? ($discountPerUnit / $orig * 100) : 0;
                             $rawImg = product_image_url($it);
                             $img   = $rawImg ?: 'https://via.placeholder.com/120x160?text=Foto';
                         ?>
@@ -554,6 +557,12 @@ $totalOriginal = $totalValue + $totalSavings;
                                 <div class="right">
                                     <div class="muted">Investimento</div>
                                     <div class="price"><?= currency_format($sale, $qty) ?></div>
+                                    <?php if ($discountTotal > 0): ?>
+                                        <div class="discount-meta">
+                                            <span class="discount-badge">-<?= number_format($discountPercent, 0) ?>%</span>
+                                            <span class="discount-text"><?= money($discountTotal) ?> de desconto</span>
+                                        </div>
+                                    <?php endif; ?>
                                 </div>
                                 <div class="item-actions-bar">
                                     <button type="button" class="icon-btn" data-open-modal="edit-<?= $idx ?>" title="Editar item">✎</button>
