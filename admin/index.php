@@ -44,6 +44,7 @@ $globalTotalOrders  = (int) $globalTotals['total_orders'];
 $globalTotalItems   = (int) $globalTotals['total_items'];
 $globalTotalValue   = (float) $globalTotals['total_value'];
 $globalTotalSavings = (float) $globalTotals['total_savings'];
+$globalTotalOriginal = $globalTotalValue + $globalTotalSavings;
 
 /**
  * FILTROS (afetam apenas a lista/contagem filtrada)
@@ -105,6 +106,7 @@ $filteredOrders  = count($leads);
 $filteredItems   = array_sum(array_column($leads, 'total_items'));
 $filteredValue   = array_sum(array_column($leads, 'total_value'));
 $filteredSavings = array_sum(array_column($leads, 'total_savings'));
+$filteredOriginal = $filteredValue + $filteredSavings;
 
 /** Resumo */
 $resultsLabel = $filteredOrders === 1 ? 'pedido encontrado' : 'pedidos encontrados';
@@ -235,6 +237,17 @@ function status_chip_class(string $status): string
             <?php if ($statusFilter === 'Cancelado'): ?>
                 <small class="stat-secondary js-cancel-breakdown">
                     Itens em pedidos cancelados: <?= (int)$filteredItems ?>
+                </small>
+            <?php endif; ?>
+        </div>
+
+        <div>
+            <span>Faturamento normal</span>
+            <strong><?= 'R$ ' . number_format($globalTotalOriginal, 2, ',', '.') ?></strong>
+            <small>Soma dos precos sem desconto</small>
+            <?php if ($statusFilter === 'Cancelado'): ?>
+                <small class="stat-secondary js-cancel-breakdown">
+                    Valor bruto dos cancelados: <?= 'R$ ' . number_format($filteredOriginal, 2, ',', '.') ?>
                 </small>
             <?php endif; ?>
         </div>

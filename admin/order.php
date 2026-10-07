@@ -424,6 +424,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $totalItems   = (int)($totals['totalItems'] ?? $lead['total_items'] ?? 0);
 $totalValue   = (float)($totals['totalValue'] ?? $lead['total_value'] ?? 0);
 $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
+$totalOriginal = $totalValue + $totalSavings;
 
 ?>
 <!DOCTYPE html>
@@ -475,6 +476,7 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
 
                 <div class="kpis">
                     <div class="kpi"><span>Itens selecionados</span><strong><?= (int)$totalItems ?></strong></div>
+                    <div class="kpi"><span>Preço normal</span><strong><?= money($totalOriginal) ?></strong></div>
                     <div class="kpi"><span>Investimento</span><strong><?= money($totalValue) ?></strong></div>
                     <div class="kpi kpi--success"><span>Desconto previsto</span><strong><?= money($totalSavings) ?></strong></div>
                     <div class="kpi kpi--status">
@@ -858,6 +860,3 @@ $totalSavings = (float)($totals['totalSavings'] ?? $lead['total_savings'] ?? 0);
 })();
 </script>
 </html>
-
-
-
