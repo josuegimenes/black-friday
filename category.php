@@ -636,7 +636,6 @@ $otherCategories = array_filter(
 
                     <div class="product-panel">
                         <div class="panel-head">
-                            <span class="badge status-badge">Novo</span>
                             <div class="panel-title">
                                 <p class="product-tag"><?= htmlspecialchars($category['name']) ?></p>
                                 <h3><?= htmlspecialchars($product['name']) ?></h3>

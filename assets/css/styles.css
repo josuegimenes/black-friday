@@ -794,11 +794,11 @@ header .headline {
     margin-top: 4px;
     padding: 6px 12px;
     border-radius: 999px;
-    background: linear-gradient(135deg, rgba(64, 191, 255, 0.7), rgba(0, 118, 255, 0.7));
-    color: #e8f5ff;
+    background: rgba(70, 252, 180, 0.15);
+    color: #46fcb4;
     font-weight: 700;
     font-size: 0.85rem;
-    border: 1px solid rgba(0, 118, 255, 0.35);
+    border: 1px solid rgba(70, 252, 180, 0.4);
 }
 
 .product-info-block {
@@ -873,8 +873,9 @@ header .headline {
     height: 18px;
     padding: 0 6px;
     border-radius: 999px;
-    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
-    color: #050505;
+    background: rgba(255, 0, 127, 0.18);
+    border: 1px solid rgba(255, 0, 127, 0.5);
+    color: #ff007f;
     font-size: 0.7rem;
     font-weight: 700;
     display: none;
@@ -1008,9 +1009,7 @@ header .headline {
 }
 
 .cart-sidebar__metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 10px;
+    display: none;
 }
 
 .cart-sidebar__metrics span {
@@ -1058,6 +1057,11 @@ header .headline {
 .pill.is-active {
     border-color: rgba(255, 0, 127, 0.6);
     box-shadow: 0 0 0 2px rgba(255, 0, 127, 0.25);
+}
+
+.pill:hover {
+    border-color: rgba(255, 0, 127, 0.5);
+    box-shadow: 0 0 6px rgba(255, 0, 127, 0.2);
 }
 
 .product-meta-block {
@@ -1113,11 +1117,16 @@ header .headline {
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    border: 1px solid rgba(255, 99, 99, 0.3);
-    background: rgba(255,255,255,0.05);
-    color: #ff6b6b;
+    border: 1px solid rgba(255, 0, 127, 0.4);
+    background: rgba(255, 0, 127, 0.08);
+    color: #ff007f;
     font-size: 1.1rem;
     cursor: pointer;
+}
+
+.quantity-compact .qty-wrapper button:hover {
+    border-color: rgba(255, 0, 127, 0.6);
+    box-shadow: 0 0 4px rgba(255, 0, 127, 0.18);
 }
 
 .quantity-compact .qty-wrapper input {
@@ -1453,28 +1462,34 @@ header .headline {
     margin-top: 8px;
     padding: 14px;
     border-radius: 16px;
-    border: none;
+    border: 1px solid transparent;
     font-family: var(--space);
     text-transform: uppercase;
     letter-spacing: 2px;
     cursor: pointer;
-    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
-    color: #050505;
+    background: transparent;
+    color: #fff;
 }
 
 .add-btn.primary {
-    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
-    color: #050505;
+    background: rgba(255, 235, 59, 0.18);
+    border-color: rgba(255, 235, 59, 0.5);
 }
 
 .add-btn.ghost {
-    background: linear-gradient(120deg, var(--neon-cyan), var(--neon-pink));
-    color: #050505;
+    background: rgba(255, 0, 127, 0.18);
+    border-color: rgba(255, 0, 127, 0.5);
 }
 
 .add-btn.primary:hover,
 .add-btn.ghost:hover {
     filter: brightness(1.05);
+    box-shadow: 0 0 0px rgba(255, 235, 59, 0.35), 0 0 10px rgba(255, 235, 59, 0.25);
+}
+
+.add-btn.ghost:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 0 0px rgba(255, 0, 127, 0.35), 0 0 10px rgba(255, 0, 127, 0.25);
 }
 
 @media (max-width: 1100px) {
@@ -1679,9 +1694,9 @@ header .headline {
 .qty-btn {
     width: 32px;
     height: 32px;
-    background: rgba(255, 0, 127, 0.12);
-    border: 1px solid rgba(255, 0, 127, 0.3);
-    color: #ff53d4;
+    background: rgba(255, 0, 127, 0.08);
+    border: 1px solid rgba(255, 0, 127, 0.4);
+    color: #ff007f;
     border-radius: 10px;
     font-size: 1.1rem;
     line-height: 1;
@@ -1691,7 +1706,23 @@ header .headline {
 
 .qty-btn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(255, 0, 127, 0.22);
+    border-color: rgba(255, 0, 127, 0.6);
+    box-shadow: 0 0 4px rgba(255, 0, 127, 0.18);
+}
+
+/* garante o mesmo estilo nos controles de quantidade do resumo/carrinho */
+.cart-sidebar .qty-btn,
+.checkout-panel .qty-btn {
+    background: rgba(255, 0, 127, 0.08);
+    border: 1px solid rgba(255, 0, 127, 0.4);
+    color: #ff007f;
+}
+
+.cart-sidebar .qty-btn:hover,
+.checkout-panel .qty-btn:hover {
+    border-color: rgba(255, 0, 127, 0.6);
+    box-shadow: 0 0 4px rgba(255, 0, 127, 0.18);
+    transform: translateY(-1px);
 }
 
 .qty-control input {
@@ -1709,43 +1740,42 @@ header .headline {
 .cart-summary-footer {
     margin-top: 8px;
     border-top: 1px solid rgba(255,255,255,0.08);
-    padding-top: 12px;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
+    padding: 12px 10px 14px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.06));
+    border-radius: 14px;
 }
 
-.cart-summary-card {
-    padding: 10px 12px;
-    border-radius: 16px;
-    background: rgba(5, 5, 10, 0.7);
-    border: 1px solid rgba(255,255,255,0.06);
-    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+.cart-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    color: var(--text);
+    font-size: 0.95rem;
 }
 
-.cart-summary-card .label {
-    display: block;
+.cart-summary-table tr + tr {
+    border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+.cart-summary-table td {
+    padding: 10px 6px;
+}
+
+.cart-summary-table .label {
     color: var(--muted);
-    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.4px;
     text-transform: uppercase;
-    letter-spacing: 1.5px;
-    margin-bottom: 4px;
+    font-size: 0.82rem;
 }
 
-.cart-summary-card .value {
-    display: block;
-    font-size: 1.05rem;
+.cart-summary-table .value {
+    text-align: right;
+    font-weight: 700;
+    font-size: 1rem;
 }
 
-.cart-summary-card .value--highlight {
-    color: var(--success);
-}
-
-.cart-summary-card .hint {
-    display: block;
-    margin-top: 2px;
-    font-size: 0.75rem;
-    color: var(--muted);
+.cart-summary-table .value.highlight {
+    color: #46fcb4;
 }
 
 @media (max-width: 720px) {
@@ -1755,30 +1785,7 @@ header .headline {
 }
 
 .cart-metrics {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-}
-
-.cart-metrics div {
-    padding: 14px 16px;
-    border-radius: 16px;
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.06);
-}
-
-.cart-metrics span {
-    display: block;
-    font-size: 0.8rem;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-}
-
-.cart-metrics strong {
-    display: block;
-    margin-top: 6px;
-    font-size: 1.2rem;
+    display: none;
 }
 
 .cart-note {
@@ -1792,13 +1799,18 @@ header .headline {
     width: 100%;
     padding: 14px;
     border-radius: 16px;
-    border: none;
-    background: linear-gradient(120deg, var(--neon-cyan), var(--neon-pink));
-    color: #050505;
+    border: 1px solid rgba(255, 0, 127, 0.5);
+    background: rgba(255, 0, 127, 0.18);
+    color: #fff;
     font-family: var(--space);
     text-transform: uppercase;
     letter-spacing: 2px;
     cursor: pointer;
+}
+
+.primary-action:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 0 12px rgba(255, 0, 127, 0.28);
 }
 
 .checkout-overlay {
@@ -1927,22 +1939,36 @@ header .headline {
 .checkout-actions input[type='submit'] {
     padding: 12px 28px;
     border-radius: 14px;
-    border: none;
+    border: 1px solid transparent;
     font-family: var(--space);
     text-transform: uppercase;
     letter-spacing: 2px;
     cursor: pointer;
+    color: #fff;
 }
 
 .checkout-actions .ghost {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    color: var(--text);
+    background: rgba(255, 0, 127, 0.18);
+    border-color: rgba(255, 0, 127, 0.5);
+    color: #fff;
+    box-shadow: 0 0 0 rgba(0,0,0,0);
 }
 
 .checkout-actions .solid {
-    background: linear-gradient(120deg, var(--neon-yellow), var(--neon-pink));
-    color: #050505;
+    background: rgba(70, 252, 180, 0.15) !important;
+    border-color: rgba(70, 252, 180, 0.5) !important;
+    color: #46fcb4 !important;
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+}
+
+.checkout-actions .ghost:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 0 8px rgba(255, 0, 127, 0.25);
+}
+
+.checkout-actions .solid:hover {
+    filter: brightness(1.05);
+    box-shadow: 0 0 8px rgba(70, 252, 180, 0.3);
 }
 
 .success-screen {
