@@ -318,6 +318,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $catalogItem = $catalogProducts[$pid] ?? null;
             $name = $catalogItem['name'] ?? ($items[$idx]['name'] ?? 'Produto');
 
+            // Impede duplicar combina��es id+cor+tamanho em outro item
+            $norm = static function($val) { return strtolower(trim((string)$val)); };
+            $newCombo = $norm($pid) . '|' . $norm($color) . '|' . $norm($size);
+            foreach ($items as $j => $ex) {
+                if ($j === $idx) continue;
+                $combo = $norm($ex['productId'] ?? '') . '|' . $norm($ex['color'] ?? '') . '|' . $norm($ex['size'] ?? '');
+                if ($combo === $newCombo) {
+                    $_SESSION['order_flash'] = [
+                        'type' => 'error',
+                        'msg' => 'Esta combinaçãoo de produto/cor/tamanho já existe em outro item. Edite o item correspondente ou remova este antes de prosseguir.'
+                    ];
+                    header('Location: order.php?id=' . $id);
+                    exit;
+                }
+            }
+
             $items[$idx]['productId'] = $pid ?: ($items[$idx]['productId'] ?? null);
             $items[$idx]['name'] = $name;
             $items[$idx]['color'] = $color ?: ($items[$idx]['color'] ?? '');
