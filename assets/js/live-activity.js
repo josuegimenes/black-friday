@@ -7,8 +7,8 @@
     let timer = null;
     const MAX_VISIBLE = 3;
     const SHOW_MS = 5000;
-    const MIN_DELAY = 20000;
-    const MAX_DELAY = 40000;
+    const MIN_DELAY = 10000;
+    const MAX_DELAY = 20000;
 
     const shuffle = (arr) => {
         const a = arr.slice();
@@ -37,7 +37,7 @@
         const item = queue.shift();
         const name = item.name || 'Cliente';
         const pieces = Math.max(1, parseInt(item.pieces || 1, 10));
-        const msg1 = `${name} reservou seu acesso.`;
+        const msg1 = `${name} reservou seu pedido.`;
         const msg2 = `Garantiu ${pieces} peça${pieces > 1 ? 's' : ''}.`;
 
         const card = document.createElement('div');
