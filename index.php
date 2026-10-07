@@ -59,6 +59,28 @@ $faqItems = [
 <body>
     <main class="landing-shell">
         <section class="hero hero-template" id="inicio">
+            <div class="ticker-wrap">
+                <p class="ticker-kicker">CONTAGEM REGRESSIVA - MONTE SEU PEDIDO AGORA</p>
+                <div class="countdown ticker">
+                    <div class="brick">
+                        <span class="value" data-countdown="days">--</span>
+                        <span class="label">Dias</span>
+                    </div>
+                    <div class="brick">
+                        <span class="value" data-countdown="hours">--</span>
+                        <span class="label">Horas</span>
+                    </div>
+                    <div class="brick">
+                        <span class="value" data-countdown="minutes">--</span>
+                        <span class="label">Minutos</span>
+                    </div>
+                    <div class="brick">
+                        <span class="value" data-countdown="seconds">--</span>
+                        <span class="label">Segundos</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="logo-stage">
                 <div class="logo-glow">
                     <div class="logo-type" role="img" aria-label="Logo A maior Black da Vésteme"></div>
@@ -66,31 +88,15 @@ $faqItems = [
             </div>
 
             <div class="hero-pill">
-                <p class="pill-headline">Toda a loja a preço de <strong>Atacado</strong></p>
-                <p class="pill-subline">Descontos de até 80% OFF (por ordem de cadastro e enquanto durar o estoque).</p>
+                <p class="pill-headline">Sua chance de <span class="pill-highlight">renovar&nbsp;seus&nbsp;looks</span></p>
+                <p class="pill-subline">
+                    Toda a loja com descontos de até <span class="pill-highlight-80">80% OFF</span>,
+                    liberado por ordem de pedido e somente enquanto durar o estoque.
+                </p>
             </div>
 
-            <div class="countdown ticker">
-                <div class="brick">
-                    <span class="value" data-countdown="days">--</span>
-                    <span class="label">Dias</span>
-                </div>
-                <div class="brick">
-                    <span class="value" data-countdown="hours">--</span>
-                    <span class="label">Horas</span>
-                </div>
-                <div class="brick">
-                    <span class="value" data-countdown="minutes">--</span>
-                    <span class="label">Minutos</span>
-                </div>
-                <div class="brick">
-                    <span class="value" data-countdown="seconds">--</span>
-                    <span class="label">Segundos</span>
-                </div>
-            </div>
-
-            <p class="hero-note">A promoção vai até 28/11 ou até o estoque acabar.<br> Selecione seus itens agora para ter prioridade na liberação.</p>
-            <a class="cta-primary" href="#categorias">MONTE MEU PEDIDO AGORA</a>
+            <a class="cta-primary" href="#categorias">MONTE SEU PEDIDO E<br>DESBLOQUEIE SEUS DESCONTOS</a>
+            <p class="hero-note">A promoção é válida até 30/11 por ordem de pedido enviado. Terminou o estoque, acabou a Black mesmo que o cronômetro não tenha zerado.</p>
         </section>
 
         <section class="steps-section" id="como-funciona">
@@ -102,29 +108,29 @@ $faqItems = [
             <div class="steps-grid">
                 <article class="step-card">
                     <div class="step-head">
-                        <h3>1º PASSO - Monte seu pedido (sem pagamento agora)</h3>
+                        <h3>1º PASSO – MONTE SEU PEDIDO (SEM PAGAR NADA AGORA)</h3>
                     </div>
                     <div class="step-body">
                         <img src="assets/img/passo1-black.png" alt="Ícone sacola com coração representando montagem do pedido">
-                        <p>Escolha as peças nas categorias, adicione ao carrinho e conclua com seus dados.</p>
+                        <p>Escolha as peças nas categorias, adicione ao carrinho e envie seu pedido. Você <strong>não paga nada agora</strong>: essa etapa serve para <strong>reservar seus looks</strong> e garantir seu lugar <strong>na fila VIP da Black</strong>.</p>
                     </div>
                 </article>
                 <article class="step-card">
                     <div class="step-head">
-                        <h3>2º PASSO - Valide seu interesse</h3>
+                        <h3>2º PASSO – FAÇA PARTE DO GRUPO SECRETO NO WHATSAPP</h3>
                     </div>
                     <div class="step-body">
                         <img src="assets/img/passo2-black.png" alt="Ícone do WhatsApp representando validação do interesse">
-                        <p>Entre no grupo oficial do WhatsApp para ser avisado sobre a sua liberação.</p>
+                        <p>Vamos te enviar um link para que você possa entrar no <strong>grupo secreto do WhatsApp</strong> para acompanhar o andamento da sua reserva e receber <strong>em primeira mão</strong> os avisos sobre a liberação dos pedidos.</p>
                     </div>
                 </article>
                 <article class="step-card">
                     <div class="step-head">
-                        <h3>3º PASSO - Liberação por ordem de cadastro</h3>
+                        <h3>3º PASSO – LIBERAÇÃO POR ORDEM DE CADASTRO</h3>
                     </div>
                     <div class="step-body">
                         <img src="assets/img/passo3-black.png" alt="Ícone de checklist indicando liberação por fila">
-                        <p>Seguimos rigorosamente a ordem de chegada. Enviaremos o link de pagamento antes do estoque acabar.</p>
+                        <p>Seguimos rigorosamente a <strong>ordem de chegada</strong>. Quando chegar a sua vez na fila, avisamos você e enviamos o <strong>link de pagamento antes do estoque acabar</strong>, para que não perca as peças que escolheu.</p>
                     </div>
                 </article>
             </div>
@@ -134,7 +140,7 @@ $faqItems = [
             <header>
                 <p class="section-kicker">Monte seu pedido</p>
                 <h2>Escolha uma categoria para começar</h2>
-                <p>Acesse cada coleção para ver opções, tamanhos e valores liberados com preço de atacado.</p>
+                <p>Acesse cada coleção para ver opções, tamanhos e valores liberados com preços de Black.</p>
             </header>
             <div class="category-showcase">
                 <?php foreach ($categoryIllustrations as $slug => $image): ?>
@@ -172,7 +178,7 @@ $faqItems = [
     </main>
 
     <footer>
-        &copy; <?= date('Y') ?> Vésteme Modas - Black Friday atacado liberado com acesso controlado.
+        &copy; <?= date('Y') ?> Vésteme Modas - Black Friday • Promoção Única • Estoque Limitado.
     </footer>
     <script src="assets/js/main.js"></script>
     <div id="liveActivity" class="live-activity" aria-live="polite"></div>
